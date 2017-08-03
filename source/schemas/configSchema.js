@@ -12,6 +12,9 @@ module.exports = {
                 },
             },
         },
+        name: {
+            type: "string",
+        },
         notify: {
             type   : "boolean",
             default: true,

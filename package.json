@@ -1,14 +1,14 @@
 {
-  "name": "npm-terminalus",
+  "name": "terminalus",
   "version": "0.0.1",
-  "description": "Terminal dashboard awesomeness",
-  "main": "source/index.js",
+  "description": "Terminal dashboard awesomeness for npm",
+  "main": "dist/index.js",
   "scripts": {
     "update": "npm-check -u",
     "setup:flow": "rm -rf ./flow-typed && flow-typed install",
     "setup": "rm -f package-lock.json && rm -rf ./node_modules && npm i",
     "postinstall": "npm run setup:flow",
-    "start": "babel-node source/index.js",
+    "start": "DEBUG=Dashboard* babel-node source/index.js",
     "lint": "eslint source/",
     "lint:fix": "eslint_d --color --fix source/",
     "test": "tape -r babel-register tests/**/*.js | tap-diff",

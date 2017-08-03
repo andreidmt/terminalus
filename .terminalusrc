@@ -1,4 +1,5 @@
 {
+    "name": "Halt and catch fire",
     "notify"  : true,
     "commands": [
         {

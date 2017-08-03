@@ -1,6 +1,6 @@
-# npm-teminalus
+# terminalus
 
-> Terminal dashboard awesomeness
+> Terminal dashboard awesomeness for npm
 
 ## WIP
 

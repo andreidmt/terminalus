@@ -1,8 +1,6 @@
 // @flow
 
-/* eslint no-sync: "off" */
-/* eslint no-console: "off" */
-
+// const _debug = require( "debug" )( "Dashboard:Config" )
 const _ajv = require( "ajv" )
 const _rc = require( "rc" )
 const _fs = require( "fs" )
@@ -17,6 +15,7 @@ const M = require( "./m" )
  */
 const _mergeWithRC = packageJSON =>
     _rc( packageJSON.name, {
+        name       : packageJSON.name,
         pkg_scripts: packageJSON.scripts,
     } )
 
