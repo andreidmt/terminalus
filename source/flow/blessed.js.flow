@@ -1,3 +1,5 @@
 // @flow
 
 declare type Blessed$Log = any
+
+declare type Blessed$Screen = any
