@@ -1,0 +1,53 @@
+{
+  "name": "npm-terminalus",
+  "version": "0.0.1",
+  "description": "Terminal dashboard awesomeness",
+  "main": "source/index.js",
+  "scripts": {
+    "update": "npm-check -u",
+    "setup:flow": "rm -rf ./flow-typed && flow-typed install",
+    "setup": "rm -f package-lock.json && rm -rf ./node_modules && npm i",
+    "postinstall": "npm run setup:flow",
+    "start": "babel-node source/index.js",
+    "lint": "eslint source/",
+    "lint:fix": "eslint_d --color --fix source/",
+    "test": "tape -r babel-register tests/**/*.js | tap-diff",
+    "flow": "flow",
+    "flow:report": "flow-coverage-report -i 'source/**/*.js' -i 'source/**/*.jsx' -x 'src/test/**' -t html -t json -t text",
+    "build": "babel source --out-dir dist"
+  },
+  "author": "Andrei Dumitrescu <andrei@codemachiner.com> (https://twitter.com/andreidcm)",
+  "license": "ISC",
+  "devDependencies": {
+    "@codemachiner/eslint-config": "2.7.0",
+    "babel-cli": "6.24.1",
+    "babel-eslint": "7.2.3",
+    "babel-preset-env": "1.6.0",
+    "babel-preset-flow": "6.23.0",
+    "debug": "2.6.8",
+    "eslint": "4.3.0",
+    "eslint-plugin-compat": "1.0.4",
+    "eslint-plugin-flowtype": "2.35.0",
+    "eslint-plugin-flowtype-errors": "3.3.1",
+    "eslint-plugin-import": "2.7.0",
+    "eslint-plugin-json": "1.2.0",
+    "eslint-plugin-no-inferred-method-name": "1.0.2",
+    "eslint-plugin-promise": "3.5.0",
+    "eslint-plugin-unicorn": "2.1.2",
+    "eslint-watch": "3.1.2",
+    "flow-bin": "0.51.1",
+    "flow-typed": "2.1.5",
+    "markdownlint-cli": "0.3.1",
+    "npm-check": "5.4.5",
+    "tap-diff": "0.1.1",
+    "tape": "4.8.0"
+  },
+  "dependencies": {
+    "ajv": "5.2.2",
+    "blessed": "0.1.81",
+    "boxen": "1.2.1",
+    "chalk": "2.0.1",
+    "node-notifier": "5.1.2",
+    "rc": "1.2.1"
+  }
+}

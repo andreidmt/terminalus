@@ -57,3 +57,14 @@ typings/
 # dotenv environment variables file
 .env
 
+# mac
+.DS_Store
+
+# Editor directories and files
+*.sublime-project
+*.sublime-workspace
+.tern-port
+
+# App
+flow-typed/
+todo

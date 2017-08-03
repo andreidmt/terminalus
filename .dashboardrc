@@ -1,0 +1,34 @@
+{
+    "notify"  : true,
+    "commands": [
+        {
+            "label": "ESLint",
+            "cmd"  : "npm",
+            "args" : [ "run", "lint", "--", "--color" ],
+            "watch": {
+                "glob": "source/"
+            },
+            "stderr": false
+        }, {
+            "label" : "Flow",
+            "cmd"   : "npm",
+            "args"  : [ "run", "flow", "--", "--color=always" ],
+            "stderr": false,
+            "clearOnRestart": true
+        }, {
+            "label" : "Tape",
+            "cmd"   : "npm",
+            "args"  : [ "run", "test", "--", "--color" ],
+            "stderr": false,
+            "clearOnRestart": true
+        }, {
+            "label": "LS",
+            "cmd"  : "ls",
+            "args" : [ "-a" ]
+        }
+    ],
+    "layout": [
+        [ 0, 1 ],
+        [ 2, 3 ]
+    ]
+}

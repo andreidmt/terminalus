@@ -1,0 +1,14 @@
+{
+    "presets": [
+        [
+            "env", {
+                "useBuiltIns": true,
+                "debug"      : false,
+                "targets"    : {
+                    "node": "7.7.2"
+                }
+            }
+        ],
+        "flow",
+    ],
+}
