@@ -97,6 +97,21 @@ const forEachKey = (input, fn) => {
 };
 
 /**
+ * { function_description }
+ *
+ * @param   {number}    input          The input number
+ * @param   {number}    decimalPlaces  The decimal places number
+ * @return  {number}  { description_of_the_return_value }
+ * @example
+ * round(3.4456,2) //=>
+ */
+const round = (input, decimalPlaces = 0) => {
+    const powOf10 = 10 ** decimalPlaces;
+
+    return Math.round(input * powOf10) / powOf10;
+};
+
+/**
  * Performs left-to-right function composition. The leftmost function may have
  * any arity; the remaining functions must be unary.
  *
@@ -113,8 +128,11 @@ const pipe = (...functions) => (...input) => {
 /**
  * Creates a new instance of the object with same properties than original.
  *
- * @param      {*}  toBeCloned  To be cloned
- * @return     {*}  Copy of this object.
+ * @param {T}  toBeCloned  To be cloned
+ * @return {T}  Copy of this object.
+ *
+ * @type    {T}
+ * @example { example }
  */
 const clone = toBeCloned => {
 
@@ -238,5 +256,6 @@ module.exports = {
     protoChain,
     equals,
     if: If,
-    isSomething
+    isSomething,
+    round
 };

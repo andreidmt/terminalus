@@ -1,13 +1,13 @@
 // @flow
 
-// const _debug = require( "debug" )( "Dashboard:CMDCommand" )
+// const _debug = require( "debug" )( "Terminalus:Frame" )
 const { Log, Text } = require( "blessed" )
 
 const M = require( "../m" )
 const { start, pipe, COLORS } = require( "../utils" )
 
-const DEFAULT_COMMAND_OPTIONS = {
-    _type       : "terminalusLog",
+const DEFAULT_FRAME_PROPS = {
+    _type       : "terminalusFrame",
     scrollable  : true,
     input       : true,
     alwaysScroll: true,
@@ -34,10 +34,10 @@ const DEFAULT_COMMAND_OPTIONS = {
         },
         focus: {
             scrollbar: {
-                bg: COLORS.BLUE,
+                bg: "blue",
             },
             border: {
-                fg: COLORS.BLUE,
+                fg: "blue",
             },
         },
         border: {
@@ -49,7 +49,7 @@ const DEFAULT_COMMAND_OPTIONS = {
     },
 }
 
-const DEFAULT_FOOTER_OPTIONS = {
+const DEFAULT_FOOTER_PROPS = {
     detatched: true,
     height   : 1,
     padding  : {
@@ -67,7 +67,7 @@ const DEFAULT_FOOTER_OPTIONS = {
 
 import type { ChildProcessType } from "../utils"
 
-export type CommandOptionsType = {
+export type FramePropsType = {
     label: string;
     top: string;
     left: string;
@@ -81,7 +81,7 @@ export type CommandOptionsType = {
     stderr?: boolean;
 }
 
-type CommandType = {
+export type FrameType = {
     start: (
         current: ?ChildProcessType,
         cmd: string,
@@ -94,21 +94,21 @@ type CommandType = {
 /**
  * Factory function for creating new Command Log widget objects
  *
- * @param  {CommandOptionsType}  options  asd
+ * @param  {FramePROPSType}  PROPS  asd
  *
- * @return {CommandType}         New Command Log object
+ * @return {FrameType}         New Command Log object
  */
-const CMDLogFactory = ( options: CommandOptionsType ): CommandType => {
+const FrameFactory = ( props: FramePropsType ): FrameType => {
 
-    const _cmd = options.cmd
-    const _args = options.args || []
-    const _stderr = options.stderr || true
-    const _clearOnRestart = options.clearOnRestart
+    const _cmd = props.cmd
+    const _args = props.args || []
+    const _stderr = props.stderr || true
+    const _clearOnRestart = props.clearOnRestart
 
     let childProcess = start( null, _cmd, _args )
 
-    const logWidget = new Log( Object.assign(
-        M.clone( DEFAULT_COMMAND_OPTIONS ),
+    const logWidget = new Log( Object.assign( {},
+        M.clone( DEFAULT_FRAME_PROPS ),
         M.pick( [
             "parent",
             "label",
@@ -116,14 +116,14 @@ const CMDLogFactory = ( options: CommandOptionsType ): CommandType => {
             "left",
             "width",
             "height",
-        ], options )
+        ], props )
     ) )
 
     logWidget._.footer = new Text( Object.assign( {}, {
         parent: logWidget.parent,
         top   : logWidget.atop + logWidget.height - 1,
-        left  : `${options.left}+3`,
-    }, DEFAULT_FOOTER_OPTIONS ) )
+        left  : `${props.left}+3`,
+    }, DEFAULT_FOOTER_PROPS ) )
 
     /*
      * Pass the process output to the log element
@@ -143,7 +143,7 @@ const CMDLogFactory = ( options: CommandOptionsType ): CommandType => {
      * Highlight box title
      */
     logWidget.on( "focus", () => {
-        logWidget.setLabel( `[ ${ options.label } ]` )
+        logWidget.setLabel( `[ ${ props.label } ]` )
         logWidget.parent.render()
     } )
 
@@ -151,7 +151,7 @@ const CMDLogFactory = ( options: CommandOptionsType ): CommandType => {
      * Reset box title to original
      */
     logWidget.on( "blur", () => {
-        logWidget.setLabel( options.label )
+        logWidget.setLabel( props.label )
         logWidget.parent.render()
     } )
 
@@ -168,5 +168,5 @@ const CMDLogFactory = ( options: CommandOptionsType ): CommandType => {
 }
 
 module.exports = {
-    getCMDLog: CMDLogFactory,
+    getFrame: FrameFactory,
 }

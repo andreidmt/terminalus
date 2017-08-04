@@ -1,11 +1,11 @@
 // @flow
 
-// const _debug = require( "debug" )( "Dashboard:CMDLayout" )
+// const _debug = require( "debug" )( "Terminalus:Layout" )
 const { Screen } = require( "blessed" )
 const M = require( "../m" )
-const { getCMDLog } = require( "./command" )
+const { getFrame } = require( "./frame" )
 
-const DEFAULT_LAYOUT_OPTIONS = {
+const DEFAULT_LAYOUT_PROPS = {
     tabSize     : 4,
     smartCSR    : true,
     fullUnicode : true,
@@ -18,11 +18,13 @@ const DEFAULT_LAYOUT_OPTIONS = {
 //             Flow types          =
 // =================================
 
-import type { CommandOptionsType } from "./command"
+import type { FramePropsType } from "./frame"
 
-type LayoutOptionsType = {
+type LayoutPropsType = {
     title: string;
-    commands: CommandOptionsType[];
+    frames: {
+        [string]: FramePropsType;
+    };
 }
 
 type LayoutType = {
@@ -35,14 +37,14 @@ type LayoutType = {
 /**
  * Factory function for creating new Command Layout widget objects
  *
- * @param  {LayoutOptionsType}  options  asd
+ * @param  {LayoutPropsType}  options  asd
  *
  * @return {CMDLogType}         New Command Layout object
  */
-const CMDLayoutFactory = ( options: LayoutOptionsType ): LayoutType => {
+const LayoutFactory = ( options: LayoutPropsType ): LayoutType => {
 
     const layoutWidget = new Screen( Object.assign( {},
-        M.clone( DEFAULT_LAYOUT_OPTIONS ),
+        M.clone( DEFAULT_LAYOUT_PROPS ),
         {
             title: options.title,
         }
@@ -60,15 +62,15 @@ const CMDLayoutFactory = ( options: LayoutOptionsType ): LayoutType => {
         layoutWidget.focusPrevious().render()
     } )
 
-    options.commands.forEach( command => {
-        getCMDLog( Object.assign( {}, {
+    Object.values( options.frames ).forEach( ( frame: FramePropsType ) => {
+        getFrame( Object.assign( {}, {
             parent: layoutWidget,
-        }, command ) )
+        }, frame ) )
     } )
 
     return layoutWidget
 }
 
 module.exports = {
-    getCMDLayout: CMDLayoutFactory,
+    getLayout: LayoutFactory,
 }

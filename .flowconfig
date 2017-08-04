@@ -6,7 +6,7 @@
 source
 
 [libs]
-source/flow
+source/_flow
 
 [options]
 module.system.node.resolve_dirname=node_modules

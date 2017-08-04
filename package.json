@@ -8,7 +8,7 @@
     "setup:flow": "rm -rf ./flow-typed && flow-typed install",
     "setup": "rm -f package-lock.json && rm -rf ./node_modules && npm i",
     "postinstall": "npm run setup:flow",
-    "start": "DEBUG=Dashboard* babel-node source/index.js",
+    "start": "DEBUG=Terminalus* babel-node source/index.js",
     "lint": "eslint source/",
     "lint:fix": "eslint_d --color --fix source/",
     "test": "tape -r babel-register tests/**/*.js | tap-diff",

@@ -1,35 +1,86 @@
 {
-    "name": "Halt and catch fire",
-    "notify"  : true,
-    "commands": [
-        {
+    "name"  : "Halt and catch fire",
+    "notify": true,
+    "frames": {
+        "eslint": {
             "label": "ESLint",
             "cmd"  : "npm",
             "args" : [ "run", "lint", "--", "--color" ],
+            "stderr": false,
             "watch": {
                 "glob": "source/"
-            },
-            "stderr": false
-        }, {
-            "label" : "Flow",
-            "cmd"   : "npm",
-            "args"  : [ "run", "flow", "--", "--color=always" ],
-            "stderr": false,
+            }
+        },
+        "flow": {
+            "label"         : "Flow",
+            "cmd"           : "npm",
+            "args"          : [ "run", "flow", "--", "--color=always" ],
+            "stderr"        : false,
             "clearOnRestart": true
-        }, {
-            "label" : "Tape",
-            "cmd"   : "npm",
-            "args"  : [ "run", "test", "--", "--color" ],
-            "stderr": false,
+        },
+        "tape": {
+            "label"         : "Tape",
+            "cmd"           : "npm",
+            "args"          : [ "run", "test", "--", "--color" ],
+            "stderr"        : false,
             "clearOnRestart": true
-        }, {
+        },
+        "ls1": {
             "label": "LS",
             "cmd"  : "ls",
             "args" : [ "-a" ]
+        },
+        "ls2": {
+            "label": "LS 2",
+            "cmd"  : "ls",
+            "args" : [ "-a" ]
         }
-    ],
+    },
     "layout": [
-        [ 0, 1 ],
-        [ 2, 3 ]
+        [ "ls1:30", "flow:40", "tape" ],
+        [ "eslint:60", "ls2" ]
     ]
+
+    // layout2: {
+    //     type  : "row",
+    //     frames: [
+    //         {
+    //             type  : "row",
+    //             frames: [
+    //                 {
+    //                     type: "frame",
+    //                     size: 30,
+    //                     slug: "eslint",
+    //                 }, {
+    //                     type: "frame",
+    //                     size: 50,
+    //                     slug: "flow",
+    //                 }, {
+    //                     type: "frame",
+    //                     size: 20,
+    //                     slug: "tape",
+    //                 },
+    //             ],
+    //         }, {
+    //             type  : "column",
+    //             frames: [
+    //                 {
+    //                     type: "frame",
+    //                     size: 50,
+    //                     slug: "ls2",
+    //                 }, {
+    //                     type: "frame",
+    //                     size: 50,
+    //                     slug: "ls1",
+    //                 },
+    //             ],
+    //         },
+    //     ],
+    // },
+    // layout3: {
+    //     row: {
+    //         row   : [ "eslint:30", "flow:50", "tape:20" ],
+    //         column: [ "ls1:50", "ls2:50" ],
+    //     },
+    // },
 }
