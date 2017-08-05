@@ -1,0 +1,67 @@
+{
+    "type"    : "object",
+    "required": [ "frames", "layout" ],
+
+    "properties": {
+        "layout": {
+            "oneOf": [ {
+                "type": "array",
+                "items": {
+                    "type" : "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            } ]
+        },
+        "name": {
+            "type": "string"
+        },
+        "notify": {
+            "type": "boolean",
+            "default": true
+        },
+        "frames": {
+            "type": "object",
+            "additionalProperties": false,
+            "patternProperties": {
+                "^.*$": {
+                    "type": "object",
+                    "required": [ "cmd" ],
+
+                    "additionalProperties": false,
+                    "properties": {
+                        "label": {
+                            "type": "string"
+                        },
+                        "cmd": {
+                            "type": "string"
+                        },
+                        "args": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        },
+                        "stderr": {
+                            "type": "boolean",
+                            "default": true
+                        },
+                        "clearOnRestart": {
+                            "type": "boolean",
+                            "default": false
+                        },
+                        "watch": {
+                            "type": "object",
+                            "properties": {
+                                "glob": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
