@@ -1,6 +1,6 @@
 // @flow
 
-// const _debug = require( "debug" )( "Terminalus:Layout" )
+const debug = require( "debug" )( "Terminalus:Layout" )
 const { Screen } = require( "blessed" )
 const M = require( "../m" )
 const { getFrame } = require( "./frame" )
