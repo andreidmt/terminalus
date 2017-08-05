@@ -14,7 +14,7 @@
     "test": "tape -r babel-register tests/**/*.js | tap-diff",
     "flow": "flow",
     "flow:report": "flow-coverage-report -i 'source/**/*.js' -i 'source/**/*.jsx' -x 'src/test/**' -t html -t json -t text",
-    "build": "babel source --out-dir dist"
+    "build": "rm -rf ./dist && babel source --out-dir dist"
   },
   "author": "Andrei Dumitrescu <andrei@codemachiner.com> (https://twitter.com/andreidcm)",
   "license": "ISC",
