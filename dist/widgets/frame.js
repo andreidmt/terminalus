@@ -1,10 +1,12 @@
 "use strict";
 
-// const _debug = require( "debug" )( "Terminalus:Frame" )
+const debug = require("debug")("Terminalus:Frame");
 const { Log, Text } = require("blessed");
+const { spawn } = require("child_process");
+const chalk = require("chalk");
 
 const M = require("../m");
-const { start, pipe, COLORS } = require("../utils");
+const { infoBox, errorBox, COLORS } = require("../utils");
 
 const DEFAULT_FRAME_PROPS = {
     _type: "terminalusFrame",
@@ -69,6 +71,48 @@ const DEFAULT_FOOTER_PROPS = {
 // ======= End of Flow types =======
 
 /**
+ * Pipe node child process output to blessed log element
+ *
+ * @param   {ChildProcessType}  childProcess  node child process
+ * @param   {FrameType}   frame        blessed log element
+ *
+ * @return  {void}
+ */
+const pipe = (childProcess, frame, stderr) => {
+
+    childProcess.stdout.on("data", data => {
+        frame.log(data.toString());
+    });
+
+    stderr && childProcess.stderr.on("data", data => {
+        frame.log(data.toString());
+    });
+
+    childProcess.on("exit", (code, signal) => {
+        frame.updateStatus({
+            code,
+            signal
+        });
+    });
+};
+
+/**
+ * Start new child process, kill old one
+ *
+ * @param  {ChildProcessType}  current  Node child process
+ * @param  {string}        cmd      Process command string
+ * @param  {string[]}      args     Process arguments string
+ *
+ * @return {ChildProcessType}  Newly spawned child process
+ */
+const start = (current, cmd, args) => M.pipe(M.if(M.isSomething, item => item.kill()), () => spawn(cmd, args, {
+    cwd: process.cwd(),
+    env: process.env,
+    detatched: false,
+    encoding: "utf8"
+}))(current);
+
+/**
  * Factory function for creating new Command Log widget objects
  *
  * @param  {FramePROPSType}  PROPS  asd
@@ -77,61 +121,72 @@ const DEFAULT_FOOTER_PROPS = {
  */
 const FrameFactory = props => {
 
-    const _cmd = props.cmd;
-    const _args = props.args || [];
-    const _stderr = props.stderr || true;
-    const _clearOnRestart = props.clearOnRestart;
+    let childProcess = start(null, props.cmd, props.args);
 
-    let childProcess = start(null, _cmd, _args);
+    const log = new Log(Object.assign({}, M.clone(DEFAULT_FRAME_PROPS), M.pick(["parent", "label", "top", "left", "width", "height"], props)));
 
-    const logWidget = new Log(Object.assign({}, M.clone(DEFAULT_FRAME_PROPS), M.pick(["parent", "label", "top", "left", "width", "height"], props)));
-
-    logWidget._.footer = new Text(Object.assign({}, {
-        parent: logWidget.parent,
-        top: logWidget.atop + logWidget.height - 1,
+    const footer = new Text(Object.assign({}, {
+        parent: log.parent,
+        top: log.atop + log.height - 1,
         left: `${props.left}+3`
     }, DEFAULT_FOOTER_PROPS));
 
     /*
      * Pass the process output to the log element
      */
-    pipe(childProcess, logWidget, _stderr);
+    pipe(childProcess, log, props.stderr);
 
     /*
      * Restart process on enter key press
      */
-    logWidget.key(["enter"], () => {
-        _clearOnRestart || logWidget.setContent("");
-        childProcess = start(null, _cmd, _args);
-        pipe(childProcess, logWidget, _stderr);
+    log.key(["enter"], () => {
+
+        //
+        props.clearOnRestart && log.setContent("");
+
+        childProcess = start(null, props.cmd, props.args);
+        pipe(childProcess, log, props.stderr);
     });
 
     /*
      * Highlight box title
      */
-    logWidget.on("focus", () => {
-        logWidget.setLabel(`[ ${props.label} ]`);
-        logWidget.parent.render();
+    log.on("focus", () => {
+        log.setLabel(` ${props.label} `);
+        log.parent.render();
     });
 
     /*
      * Reset box title to original
      */
-    logWidget.on("blur", () => {
-        logWidget.setLabel(props.label);
-        logWidget.parent.render();
+    log.on("blur", () => {
+        log.setLabel(props.label);
+        log.parent.render();
+    });
+
+    /*
+     * Most of the processes would of ended, need this for running processes
+     */
+    log.on("destroy", () => {
+        childProcess.kill();
     });
 
     /*
      * Enhancing to Log widget with command specific logic
      */
-    logWidget.command = {
-        restart: () => {
-            childProcess = start(childProcess, _cmd, _args);
-        }
+    log.restart = () => {
+        childProcess = start(childProcess, props.cmd, props.args);
     };
 
-    return logWidget;
+    log.updateStatus = newStatus => {
+        const logByType = newStatus.code === 0 ? chalk.green : chalk.red;
+
+        footer.setContent(logByType([`PID: ${childProcess.pid}`, `stderr: ${props.stderr.toString()}`, `code: ${newStatus.code}`, newStatus.signal ? `signal: ${newStatus.signal}` : ""].filter(string => string.length !== 0).join(" | ")));
+
+        log.render();
+    };
+
+    return log;
 };
 
 module.exports = {

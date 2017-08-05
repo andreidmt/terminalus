@@ -1,9 +1,9 @@
 "use strict";
 
-// const _debug = require( "debug" )( "Terminalus:Config" )
-const _ajv = require("ajv");
-const _rc = require("rc");
-const _fs = require("fs");
+const debug = require("debug")("Terminalus:Config");
+const Ajv = require("ajv");
+const rc = require("rc");
+const fs = require("fs");
 const { errorBox } = require("../utils");
 const M = require("../m");
 
@@ -13,7 +13,7 @@ const M = require("../m");
  * @param {Object}  packageJSON package.json content
  * @return {Object}
  */
-const _mergeWithRC = packageJSON => _rc(packageJSON.name, {
+const _mergeWithRC = packageJSON => rc(packageJSON.name, {
     name: packageJSON.name,
     pkg_scripts: packageJSON.scripts
 });
@@ -26,9 +26,12 @@ const _mergeWithRC = packageJSON => _rc(packageJSON.name, {
  */
 const _validateConfig = data => {
 
-    const ajv = new _ajv({ useDefaults: true });
-    const schema = require("./schema");
-    const validate = ajv.compile(schema);
+    const schema = require("./schema.json");
+    const validate = new Ajv({
+        allErrors: true,
+        format: "full",
+        useDefaults: true
+    }).compile(schema);
 
     const returnType = {
         true: () => data,
@@ -67,21 +70,28 @@ const _computeFramePosition = config => {
 
         const top = rowIndex * height;
 
+        const wildcardWidth = M.pipe(currentRow => currentRow.reduce((acc, column) => {
+            const colWidth = Number(column.split(":")[1]);
+
+            return {
+                width: colWidth ? acc.width - colWidth : acc.width,
+                count: colWidth ? acc.count : acc.count + 1
+            };
+        }, {
+            width: 100,
+            count: 0
+        }), data => M.round(data.width / data.count, 2))(row);
+
         /**
          * Do COLUMNS
          */
-        return row.reduce((acc, column, index) => {
+        return row.reduce((acc, column) => {
 
             const nameSplit = column.split(":");
-            const width = Number(nameSplit[1]) || acc.baseWidth;
-            const remWidth = acc.totalWidth - width;
-            const remElements = row.length - (index + 1);
-            const remBaseWidth = M.round(remWidth / (remElements || 1), 2);
+            const width = Number(nameSplit[1]) || wildcardWidth;
 
             return {
                 left: acc.left + width,
-                totalWidth: remWidth,
-                baseWidth: remBaseWidth,
                 frames: [...acc.frames, {
                     slug: nameSplit[0],
                     top: `${top}%`,
@@ -92,8 +102,6 @@ const _computeFramePosition = config => {
             };
         }, {
             left: 0,
-            totalWidth: 100,
-            baseWidth: M.round(100 / row.length, 2),
             frames: []
         });
     })
@@ -114,7 +122,7 @@ const _computeFramePosition = config => {
  *
  * @return {Object}
  */
-const getConfig = () => M.pipe(_fs.readFileSync, JSON.parse, _mergeWithRC, _validateConfig, _computeFramePosition)(`${process.cwd()}/package.json`, "utf8");
+const getConfig = () => M.pipe(fs.readFileSync, JSON.parse, _mergeWithRC, _validateConfig, _computeFramePosition)(`${process.cwd()}/package.json`, "utf8");
 
 module.exports = {
     getConfig
