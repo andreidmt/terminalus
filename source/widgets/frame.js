@@ -1,10 +1,12 @@
 // @flow
 
-// const _debug = require( "debug" )( "Terminalus:Frame" )
+const debug = require( "debug" )( "Terminalus:Frame" )
 const { Log, Text } = require( "blessed" )
+const { spawn } = require( "child_process" )
+const chalk = require( "chalk" )
 
 const M = require( "../m" )
-const { start, pipe, COLORS } = require( "../utils" )
+const { infoBox, errorBox, COLORS } = require( "../utils" )
 
 const DEFAULT_FRAME_PROPS = {
     _type       : "terminalusFrame",
@@ -65,7 +67,7 @@ const DEFAULT_FOOTER_PROPS = {
 //             Flow types          =
 // =================================
 
-import type { ChildProcessType } from "../utils"
+export type ChildProcessType = child_process$ChildProcess
 
 export type FramePropsType = {
     label: string;
@@ -75,21 +77,78 @@ export type FramePropsType = {
     height: string;
     parent?: Object;
 
-    clearOnRestart?: boolean;
+    clearOnRestart: boolean;
     cmd: string;
-    args?: string[];
-    stderr?: boolean;
+    args: string[];
+    stderr: boolean;
 }
 
 export type FrameType = {
-    start: (
+    restart: (
         current: ?ChildProcessType,
         cmd: string,
         args: string[]
     ) => ChildProcessType;
-}
+} & Blessed$Log
 
 // ======= End of Flow types =======
+
+/**
+ * Pipe node child process output to blessed log element
+ *
+ * @param   {ChildProcessType}  childProcess  node child process
+ * @param   {FrameType}   frame        blessed log element
+ *
+ * @return  {void}
+ */
+const pipe = (
+    childProcess: ChildProcessType,
+    frame: FrameType,
+    stderr: boolean
+) => {
+
+    childProcess.stdout.on( "data", ( data: Buffer ) => {
+        frame.log( data.toString() )
+    } )
+
+    stderr && childProcess.stderr.on( "data", ( data: Buffer ) => {
+        frame.log( data.toString() )
+    } )
+
+    childProcess.on( "exit", ( code: number, signal: string ) => {
+        frame.updateStatus( {
+            code,
+            signal,
+        } )
+    } )
+}
+
+/**
+ * Start new child process, kill old one
+ *
+ * @param  {ChildProcessType}  current  Node child process
+ * @param  {string}        cmd      Process command string
+ * @param  {string[]}      args     Process arguments string
+ *
+ * @return {ChildProcessType}  Newly spawned child process
+ */
+const start = (
+    current: ?ChildProcessType,
+    cmd: string,
+    args: string[]
+): ChildProcessType =>
+    M.pipe(
+        M.if(
+            M.isSomething,
+            ( item: ChildProcessType ) => item.kill()
+        ),
+        () => spawn( cmd, args, {
+            cwd      : process.cwd(),
+            env      : process.env,
+            detatched: false,
+            encoding : "utf8",
+        } )
+    )( current )
 
 /**
  * Factory function for creating new Command Log widget objects
@@ -100,14 +159,9 @@ export type FrameType = {
  */
 const FrameFactory = ( props: FramePropsType ): FrameType => {
 
-    const _cmd = props.cmd
-    const _args = props.args || []
-    const _stderr = props.stderr || true
-    const _clearOnRestart = props.clearOnRestart
+    let childProcess = start( null, props.cmd, props.args )
 
-    let childProcess = start( null, _cmd, _args )
-
-    const logWidget = new Log( Object.assign( {},
+    const log = new Log( Object.assign( {},
         M.clone( DEFAULT_FRAME_PROPS ),
         M.pick( [
             "parent",
@@ -119,52 +173,75 @@ const FrameFactory = ( props: FramePropsType ): FrameType => {
         ], props )
     ) )
 
-    logWidget._.footer = new Text( Object.assign( {}, {
-        parent: logWidget.parent,
-        top   : logWidget.atop + logWidget.height - 1,
+    const footer = new Text( Object.assign( {}, {
+        parent: log.parent,
+        top   : log.atop + log.height - 1,
         left  : `${props.left}+3`,
     }, DEFAULT_FOOTER_PROPS ) )
 
     /*
      * Pass the process output to the log element
      */
-    pipe( childProcess, logWidget, _stderr )
+    pipe( childProcess, log, props.stderr )
 
     /*
      * Restart process on enter key press
      */
-    logWidget.key( [ "enter" ], () => {
-        _clearOnRestart || logWidget.setContent( "" )
-        childProcess = start( null, _cmd, _args )
-        pipe( childProcess, logWidget, _stderr )
+    log.key( [ "enter" ], () => {
+
+        //
+        props.clearOnRestart && log.setContent( "" )
+
+        childProcess = start( null, props.cmd, props.args )
+        pipe( childProcess, log, props.stderr )
     } )
 
     /*
      * Highlight box title
      */
-    logWidget.on( "focus", () => {
-        logWidget.setLabel( `[ ${ props.label } ]` )
-        logWidget.parent.render()
+    log.on( "focus", () => {
+        log.setLabel( ` ${ props.label } ` )
+        log.parent.render()
     } )
 
     /*
      * Reset box title to original
      */
-    logWidget.on( "blur", () => {
-        logWidget.setLabel( props.label )
-        logWidget.parent.render()
+    log.on( "blur", () => {
+        log.setLabel( props.label )
+        log.parent.render()
+    } )
+
+    /*
+     * Most of the processes would of ended, need this for running processes
+     */
+    log.on( "destroy", () => {
+        childProcess.kill()
     } )
 
     /*
      * Enhancing to Log widget with command specific logic
      */
-    logWidget.command = {
-        restart: () => {
-            childProcess = start( childProcess, _cmd, _args )
-        },
+    log.restart = () => {
+        childProcess = start( childProcess, props.cmd, props.args )
     }
 
-    return logWidget
+    log.updateStatus = ( newStatus: { code: number; signal: string } ) => {
+        const logByType = newStatus.code === 0 ? chalk.green : chalk.red
+
+        footer.setContent(
+            logByType( [
+                `PID: ${childProcess.pid}`,
+                `stderr: ${props.stderr.toString()}`,
+                `code: ${newStatus.code}`,
+                newStatus.signal ? `signal: ${newStatus.signal}` : "",
+            ].filter( string => string.length !== 0 ).join( " | " ) )
+        )
+
+        log.render()
+    }
+
+    return log
 }
 
 module.exports = {

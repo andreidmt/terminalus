@@ -1,9 +1,9 @@
 // @flow
 
-// const _debug = require( "debug" )( "Terminalus:Config" )
-const _ajv = require( "ajv" )
-const _rc = require( "rc" )
-const _fs = require( "fs" )
+const debug = require( "debug" )( "Terminalus:Config" )
+const Ajv = require( "ajv" )
+const rc = require( "rc" )
+const fs = require( "fs" )
 const { errorBox } = require( "../utils" )
 const M = require( "../m" )
 
@@ -14,7 +14,7 @@ const M = require( "../m" )
  * @return {Object}
  */
 const _mergeWithRC = ( packageJSON: Object ) =>
-    _rc( packageJSON.name, {
+    rc( packageJSON.name, {
         name       : packageJSON.name,
         pkg_scripts: packageJSON.scripts,
     } )
@@ -27,9 +27,12 @@ const _mergeWithRC = ( packageJSON: Object ) =>
  */
 const _validateConfig = ( data: Object ) => {
 
-    const ajv = new _ajv( { useDefaults: true } )
-    const schema = require( "./schema" )
-    const validate = ajv.compile( schema )
+    const schema = require( "./schema.json" )
+    const validate = new Ajv( {
+        allErrors  : true,
+        format     : "full",
+        useDefaults: true,
+    } ).compile( schema )
 
     const returnType = {
         true : () => data,
@@ -63,8 +66,6 @@ type FramePositionType = {
 
 type RowAccType = {
     left: number;
-    totalWidth: number;
-    baseWidth: number;
     frames: FramePositionType[];
 }
 
@@ -77,6 +78,11 @@ export type ConfigType = {
         [string]: string;
     };
     layout: [];
+}
+
+type WildcardWidthType = {
+    width: number;
+    count: number;
 }
 
 // ======= End of Flow types =======
@@ -100,23 +106,35 @@ const _computeFramePosition = ( config: ConfigType ): ConfigType => {
 
             const top = rowIndex * height
 
+            const wildcardWidth = M.pipe(
+                currentRow => currentRow.reduce(
+                    ( acc: WildcardWidthType, column ): WildcardWidthType => {
+                        const colWidth = Number( column.split( ":" )[ 1 ] )
+
+                        return {
+                            width: colWidth ? acc.width - colWidth : acc.width,
+                            count: colWidth ? acc.count : acc.count + 1,
+                        }
+                    }, {
+                        width: 100,
+                        count: 0,
+                    } ),
+                ( data: WildcardWidthType ): number =>
+                    M.round( data.width / data.count, 2 )
+            )( row )
+
             /**
              * Do COLUMNS
              */
             return row.reduce(
-                ( acc: RowAccType, column, index: number ): RowAccType => {
+                ( acc: RowAccType, column ): RowAccType => {
 
                     const nameSplit = column.split( ":" )
-                    const width = Number( nameSplit[ 1 ] ) || acc.baseWidth
-                    const remWidth = acc.totalWidth - width
-                    const remElements = row.length - ( index + 1 )
-                    const remBaseWidth = M.round( remWidth / ( remElements || 1 ), 2 )
+                    const width = Number( nameSplit[ 1 ] ) || wildcardWidth
 
                     return {
-                        left      : acc.left + width,
-                        totalWidth: remWidth,
-                        baseWidth : remBaseWidth,
-                        frames    : [
+                        left  : acc.left + width,
+                        frames: [
                             ...acc.frames,
                             {
                                 slug  : nameSplit[ 0 ],
@@ -128,10 +146,8 @@ const _computeFramePosition = ( config: ConfigType ): ConfigType => {
                         ],
                     }
                 }, {
-                    left      : 0,
-                    totalWidth: 100,
-                    baseWidth : M.round( 100 / row.length, 2 ),
-                    frames    : [],
+                    left  : 0,
+                    frames: [],
                 } )
         } )
 
@@ -157,7 +173,7 @@ const _computeFramePosition = ( config: ConfigType ): ConfigType => {
  * @return {Object}
  */
 const getConfig = () => M.pipe(
-    _fs.readFileSync,
+    fs.readFileSync,
     JSON.parse,
     _mergeWithRC,
     _validateConfig,
