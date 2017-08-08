@@ -1,6 +1,6 @@
 // @flow
 
-const debug = require( "debug" )( "Terminalus:Config" )
+// const debug = require( "debug" )( "Terminalus:Config" )
 const Ajv = require( "ajv" )
 const rc = require( "rc" )
 const fs = require( "fs" )
@@ -96,17 +96,19 @@ type WildcardWidthType = {
  */
 const _computeFramePosition = ( config: ConfigType ): ConfigType => {
 
-    const height = M.round( 100 / config.layout.length, 2 )
+    const height = 100 / config.layout.length
 
     /**
      * Do ROWS
      */
-    config.layout
+    const framesFromLayout: FramePositionType[] = config.layout
         .map( ( row, rowIndex ) => {
 
             const top = rowIndex * height
 
-            const wildcardWidth = M.pipe(
+            // Pass through each column in row and see how much unallocated
+            // width there is and how many columns.
+            const wildcardWidth: number = M.pipe(
                 currentRow => currentRow.reduce(
                     ( acc: WildcardWidthType, column ): WildcardWidthType => {
                         const colWidth = Number( column.split( ":" )[ 1 ] )
@@ -158,11 +160,17 @@ const _computeFramePosition = ( config: ConfigType ): ConfigType => {
             []
         )
 
-        // merge position info on config frame obj
-        .forEach( ( frameWithPos: FramePositionType ) => {
-            Object.assign( config.frames[ frameWithPos.slug ],
-                frameWithPos )
-        } )
+    // Merge position info on config frame obj ... pass through
+    // framesFromLayout so the elements get initialized in the order defined
+    // in the layout ... tab-in will be in the same order
+    config.frames = framesFromLayout.reduce(
+        ( acc, frameWithPos: FramePositionType ) => {
+
+            acc[ frameWithPos.slug ] = Object.assign( {},
+                config.frames[ frameWithPos.slug ], frameWithPos )
+
+            return acc
+        }, {} )
 
     return config
 }

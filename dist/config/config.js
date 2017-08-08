@@ -61,15 +61,17 @@ const _validateConfig = data => {
  */
 const _computeFramePosition = config => {
 
-    const height = M.round(100 / config.layout.length, 2);
+    const height = 100 / config.layout.length;
 
     /**
      * Do ROWS
      */
-    config.layout.map((row, rowIndex) => {
+    const framesFromLayout = config.layout.map((row, rowIndex) => {
 
         const top = rowIndex * height;
 
+        // Pass through each column in row and see how much unallocated
+        // width there is and how many columns.
         const wildcardWidth = M.pipe(currentRow => currentRow.reduce((acc, column) => {
             const colWidth = Number(column.split(":")[1]);
 
@@ -107,12 +109,17 @@ const _computeFramePosition = config => {
     })
 
     // flatten to an array of FramePositionType
-    .reduce((acc, rowData) => [...acc, ...rowData.frames], [])
+    .reduce((acc, rowData) => [...acc, ...rowData.frames], []);
 
-    // merge position info on config frame obj
-    .forEach(frameWithPos => {
-        Object.assign(config.frames[frameWithPos.slug], frameWithPos);
-    });
+    // Merge position info on config frame obj ... pass through
+    // framesFromLayout so the elements get initialized in the order defined
+    // in the layout ... tab-in will be in the same order
+    config.frames = framesFromLayout.reduce((acc, frameWithPos) => {
+
+        acc[frameWithPos.slug] = Object.assign({}, config.frames[frameWithPos.slug], frameWithPos);
+
+        return acc;
+    }, {});
 
     return config;
 };
