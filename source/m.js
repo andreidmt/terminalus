@@ -124,12 +124,12 @@ const round = ( input: number, decimalPlaces: number = 0 ) => {
  * Performs left-to-right function composition. The leftmost function may have
  * any arity; the remaining functions must be unary.
  *
- * @param      {Array}  functions  The functions
+ * @param      {Array}  fns  The functions
  * @return     {Any}
  */
-const pipe = ( ...functions: Function[] ) => ( ...input: mixed[] ) => {
-    const [ first ] = functions
-    const [ ,...rest ] = functions
+const pipe = ( ...fns: Function[] ) => ( ...input: mixed[] ): mixed => {
+    const [ first ] = fns
+    const [ ,...rest ] = fns
 
     return rest.reduce(
         ( acc, current ) => current.call( null, acc ),
