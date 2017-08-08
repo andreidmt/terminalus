@@ -32,4 +32,10 @@ module.exports = {
         chalk.red.bgBlack( boxen( input, BOXEN_OPT ) ),
     successBox: ( input: string ) =>
         chalk.green.bgBlack( boxen( input , BOXEN_OPT ) ),
+
+    formatHRTime: ( hrtime: number[] ): string => {
+        const ms = Math.round( hrtime[ 1 ] / 10000 ) / 100
+
+        return hrtime[ 0 ] ? `${hrtime[ 0 ]}s ${ms}ms` : `${ms}ms`
+    },
 }

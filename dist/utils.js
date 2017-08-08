@@ -28,5 +28,11 @@ module.exports = {
 
     infoBox: input => chalk.blue.bgBlack(boxen(input, BOXEN_OPT)),
     errorBox: input => chalk.red.bgBlack(boxen(input, BOXEN_OPT)),
-    successBox: input => chalk.green.bgBlack(boxen(input, BOXEN_OPT))
+    successBox: input => chalk.green.bgBlack(boxen(input, BOXEN_OPT)),
+
+    formatHRTime: hrtime => {
+        const ms = Math.round(hrtime[1] / 10000) / 100;
+
+        return hrtime[0] ? `${hrtime[0]}s ${ms}ms` : `${ms}ms`;
+    }
 };
