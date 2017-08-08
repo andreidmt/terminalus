@@ -1,15 +1,14 @@
 // @flow
 
 const debug = require( "debug" )( "Terminalus:Frame" )
-const { Log, Text } = require( "blessed" )
+const { Log } = require( "blessed" )
 const { spawn } = require( "child_process" )
 const chalk = require( "chalk" )
 
 const M = require( "../m" )
-const { infoBox, errorBox, COLORS } = require( "../utils" )
+const { COLORS } = require( "../utils" )
 
 const DEFAULT_FRAME_PROPS = {
-    _type       : "terminalusFrame",
     scrollable  : true,
     input       : true,
     alwaysScroll: true,
@@ -51,18 +50,6 @@ const DEFAULT_FRAME_PROPS = {
     },
 }
 
-const DEFAULT_FOOTER_PROPS = {
-    detatched: true,
-    height   : 1,
-    padding  : {
-        left  : 1,
-        right : 1,
-        top   : 0,
-        bottom: 0,
-    },
-    border: 0,
-}
-
 // =================================
 //             Flow types          =
 // =================================
@@ -84,11 +71,15 @@ export type FramePropsType = {
 }
 
 export type FrameType = {
-    restart: (
-        current: ?ChildProcessType,
-        cmd: string,
-        args: string[]
-    ) => ChildProcessType;
+    status: {
+        running: boolean;
+        code: number;
+        signal: string;
+    };
+    footer: Blessed$Text;
+    childProcess: ChildProcessType;
+
+    respawn: () => void;
 } & Blessed$Log
 
 // ======= End of Flow types =======
@@ -115,53 +106,48 @@ const pipe = (
         frame.log( data.toString() )
     } )
 
+    childProcess.on( "close", ( code, signal ) => {
+        if ( frame.childProcess.pid === childProcess.pid ) {
+            frame.status = {
+                running: false,
+                code,
+                signal,
+            }
+        }
+    } )
+
     childProcess.on( "exit", ( code: number, signal: string ) => {
-        frame.updateStatus( {
-            code,
-            signal,
-        } )
+
+        // This happens when process was delayed and exit got here after the
+        // new process was spawned
+        if ( frame.childProcess.pid === childProcess.pid ) {
+            frame.status = {
+                running: false,
+                code,
+                signal,
+            }
+        }
     } )
 }
 
 /**
- * Start new child process, kill old one
+ * Frame element with a command piping it's output to the screen
  *
- * @param  {ChildProcessType}  current  Node child process
- * @param  {string}        cmd      Process command string
- * @param  {string[]}      args     Process arguments string
- *
- * @return {ChildProcessType}  Newly spawned child process
+ * @class   Frame
+ * @param   {FramePropsType}  props  The properties
+ * @return  {FrameType}
+ * @example
+ * const logWithCommand = new Frame({
+ *      cmd: "npm",
+ *      args: [ "run", "eslint" ]
+ * })
  */
-const start = (
-    current: ?ChildProcessType,
-    cmd: string,
-    args: string[]
-): ChildProcessType =>
-    M.pipe(
-        M.if(
-            M.isSomething,
-            ( item: ChildProcessType ) => item.kill()
-        ),
-        () => spawn( cmd, args, {
-            cwd      : process.cwd(),
-            env      : process.env,
-            detatched: false,
-            encoding : "utf8",
-        } )
-    )( current )
+function Frame( props: FramePropsType ): FrameType {
 
-/**
- * Factory function for creating new Command Log widget objects
- *
- * @param  {FramePROPSType}  PROPS  asd
- *
- * @return {FrameType}         New Command Log object
- */
-const FrameFactory = ( props: FramePropsType ): FrameType => {
-
-    let childProcess = start( null, props.cmd, props.args )
-
-    const log = new Log( Object.assign( {},
+    /*
+     * Parent constructor
+     */
+    Log.call( this, Object.assign( {},
         M.clone( DEFAULT_FRAME_PROPS ),
         M.pick( [
             "parent",
@@ -173,77 +159,133 @@ const FrameFactory = ( props: FramePropsType ): FrameType => {
         ], props )
     ) )
 
-    const footer = new Text( Object.assign( {}, {
-        parent: log.parent,
-        top   : log.atop + log.height - 1,
-        left  : `${props.left}+3`,
-    }, DEFAULT_FOOTER_PROPS ) )
+    // incoming props
+    this.props = props
+
+    //
+    this.childProcess = this.respawn()
+
+    // child process status
+    // this.status = {
+    //     running: true,
+    //     code   : null,
+    //     signal : null,
+    // }
 
     /*
-     * Pass the process output to the log element
+     * Respawn process on enter key press
      */
-    pipe( childProcess, log, props.stderr )
-
-    /*
-     * Restart process on enter key press
-     */
-    log.key( [ "enter" ], () => {
-
-        //
-        props.clearOnRestart && log.setContent( "" )
-
-        childProcess = start( null, props.cmd, props.args )
-        pipe( childProcess, log, props.stderr )
+    this.key( [ "enter" ], () => {
+        this.childProcess = this.respawn()
     } )
 
     /*
      * Highlight box title
      */
-    log.on( "focus", () => {
-        log.setLabel( ` ${ props.label } ` )
-        log.parent.render()
+    this.on( "focus", () => {
+        this.updateLabel()
     } )
 
     /*
      * Reset box title to original
      */
-    log.on( "blur", () => {
-        log.setLabel( props.label )
-        log.parent.render()
+    this.on( "blur", () => {
+        this.updateLabel()
     } )
 
     /*
      * Most of the processes would of ended, need this for running processes
      */
-    log.on( "destroy", () => {
-        childProcess.kill()
+    this.on( "destroy", () => {
+        this.childProcess.kill()
     } )
-
-    /*
-     * Enhancing to Log widget with command specific logic
-     */
-    log.restart = () => {
-        childProcess = start( childProcess, props.cmd, props.args )
-    }
-
-    log.updateStatus = ( newStatus: { code: number; signal: string } ) => {
-        const logByType = newStatus.code === 0 ? chalk.green : chalk.red
-
-        footer.setContent(
-            logByType( [
-                `PID: ${childProcess.pid}`,
-                `stderr: ${props.stderr.toString()}`,
-                `code: ${newStatus.code}`,
-                newStatus.signal ? `signal: ${newStatus.signal}` : "",
-            ].filter( string => string.length !== 0 ).join( " | " ) )
-        )
-
-        log.render()
-    }
-
-    return log
 }
 
+Frame.prototype = Object.create( Log.prototype, {
+    type: {
+        value       : "terminalusFrame",
+        enumerable  : true,
+        configurable: true,
+        writable    : true,
+    },
+
+    /**
+     * Start new child process, kill old one
+     *
+     * @return {ChildProcessType}  Newly spawned child process
+     */
+    respawn: {
+        value: function respawn(): ChildProcessType {
+            return M.pipe(
+                M.if(
+                    M.isSomething,
+                    ( child: ChildProcessType ) => child.kill()
+                ),
+                () => spawn( this.props.cmd, this.props.args, {
+                    cwd      : process.cwd(),
+                    env      : process.env,
+                    detatched: false,
+                    encoding : "utf8",
+                } )
+            )( this.childProcess )
+        },
+    },
+
+    /**
+     * { item_description }
+     */
+    updateLabel: {
+        value: function updateLabel() {
+            const color = this.status.running ? chalk.blue :
+                this.status.code === 0 ? chalk.green : chalk.red
+
+            const meta = this.focused
+                ? `[ █ ${ this.childProcess.pid } ]`
+                : "█"
+
+            this.setLabel( ` ${ color( meta ) } ${ this.props.label } ` )
+            this.parent.render()
+        },
+    },
+
+    /**
+     * { item_description }
+     */
+    childProcess: {
+        get() {
+            return this._.childProcess
+        },
+        set( value ) {
+            this._.childProcess = value
+
+            this.status = {
+                running: true,
+                code   : null,
+                signal : null,
+            }
+
+            this.props.clearOnRestart && this.setContent( "" )
+
+            pipe( this.childProcess, this, this.props.stderr )
+        },
+    },
+
+    /**
+     * { item_description }
+     */
+    status: {
+        get() {
+            return this._.status
+        },
+        set( value ) {
+            this._.status = value
+            this.updateLabel()
+        },
+        enumerable: true,
+    },
+} )
+
 module.exports = {
-    getFrame: FrameFactory,
+    Frame,
+    getFrame: ( props: FramePropsType ): FrameType => new Frame( props ),
 }

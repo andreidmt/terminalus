@@ -1,6 +1,6 @@
 // @flow
 
-const debug = require( "debug" )( "Terminalus:Layout" )
+// const debug = require( "debug" )( "Terminalus:Layout" )
 const { Screen } = require( "blessed" )
 const M = require( "../m" )
 const { getFrame } = require( "./frame" )
@@ -32,7 +32,6 @@ type LayoutType = {
 } & Blessed$Screen
 
 // ======= End of Flow types =======
-
 
 /**
  * Factory function for creating new Command Layout widget objects

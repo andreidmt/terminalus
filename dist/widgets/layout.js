@@ -21,7 +21,6 @@ const DEFAULT_LAYOUT_PROPS = {
 
 // ======= End of Flow types =======
 
-
 /**
  * Factory function for creating new Command Layout widget objects
  *
