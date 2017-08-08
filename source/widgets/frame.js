@@ -240,7 +240,7 @@ Frame.prototype = Object.create( Log.prototype, {
                 this.status.code === 0 ? chalk.green : chalk.red
 
             const meta = this.focused
-                ? `[ █ ${ this.childProcess.pid } ]`
+                ? `[ ${ this.childProcess.pid } ]`
                 : "█"
 
             this.setLabel( ` ${ color( meta ) } ${ this.props.label } ` )

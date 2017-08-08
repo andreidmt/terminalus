@@ -1,6 +1,6 @@
 "use strict";
 
-const debug = require("debug")("Terminalus:Config");
+// const debug = require( "debug" )( "Terminalus:Config" )
 const Ajv = require("ajv");
 const rc = require("rc");
 const fs = require("fs");

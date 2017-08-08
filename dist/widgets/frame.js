@@ -191,7 +191,7 @@ Frame.prototype = Object.create(Log.prototype, {
         value: function updateLabel() {
             const color = this.status.running ? chalk.blue : this.status.code === 0 ? chalk.green : chalk.red;
 
-            const meta = this.focused ? `[ █ ${this.childProcess.pid} ]` : "█";
+            const meta = this.focused ? `[ ${this.childProcess.pid} ]` : "█";
 
             this.setLabel(` ${color(meta)} ${this.props.label} `);
             this.parent.render();
