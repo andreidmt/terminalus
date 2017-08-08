@@ -10,6 +10,9 @@ M.pipe(config => getLayout({
     title: config.name,
     frames: config.frames
 }), appLayout => {
-    appLayout.focusOffset(0);
+
+    [appLayout.focused] = appLayout.children;
+
+    // appLayout.focusOffset( 1 )
     appLayout.render();
 })(getConfig());
