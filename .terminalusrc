@@ -1,14 +1,12 @@
 {
-    "name"  : "Halt and catch fire",
+    "name"  : "npm terminal dashboard",
     "frames": {
         "eslint": {
             "label": "ESLint",
             "cmd": "npm",
             "args": [ "run", "lint", "--", "--color" ],
             "stderr": false,
-            "watch": {
-                "glob": "source/"
-            }
+            "watch":  "source/**/*.js"
         },
         "flow": {
             "label": "Flow",
@@ -22,7 +20,8 @@
             "cmd": "npm",
             "args": [ "run", "test", "--", "--color" ],
             "stderr": false,
-            "clearOnRestart": true
+            "clearOnRestart": true,
+            "meta": [ "status" ]
         },
         "babel": {
             "label": "Babel",
@@ -35,9 +34,13 @@
             "args": [ "--inspect-brk", "source/test.js" ]
         }
     },
-    "layout": [
-        [ "debug" ],
-        [ "tape:60", "flow" ],
-        [ "babel", "eslint:60" ]
-    ]
+
+    "layout": {
+        "td:70": {
+            "tr:50": [ "tape", "flow" ],
+            "tr": [ "eslint" ]
+        },
+        "td": [ "debug", "babel" ]
+    }
+
 }
