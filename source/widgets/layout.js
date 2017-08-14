@@ -1,7 +1,7 @@
 // @flow
 
 // const debug = require( "debug" )( "Terminalus:Layout" )
-const { Screen } = require( "blessed" )
+const { Screen, Layout } = require( "blessed" )
 const M = require( "../m" )
 const { getFrame } = require( "./frame" )
 
@@ -14,20 +14,16 @@ const DEFAULT_LAYOUT_PROPS = {
     autoPadding : true,
 }
 
-// =================================
-//             Flow types          =
-// =================================
-
 import type { FramePropsType } from "./frame"
 
 type LayoutPropsType = {
     title: string;
     frames: {
-        [string]: FramePropsType;
+        [key: string]: FramePropsType;
     };
 }
 
-type LayoutType = {
+export type TermScreenType = {
 
 } & Blessed$Screen
 
@@ -40,36 +36,37 @@ type LayoutType = {
  *
  * @return {CMDLogType}         New Command Layout object
  */
-const LayoutFactory = ( options: LayoutPropsType ): LayoutType => {
+const TermScreen = ( options: LayoutPropsType ): TermScreenType => {
 
-    const layoutWidget = new Screen( Object.assign( {},
+    const screen = new Screen( Object.assign( {},
         M.clone( DEFAULT_LAYOUT_PROPS ),
         {
             title: options.title,
         }
     ) )
 
-    layoutWidget.program.key( [ "C-c" ], () => {
-        layoutWidget.destroy()
+    screen.program.key( [ "C-c" ], () => {
+        screen.destroy()
     } )
 
-    layoutWidget.program.key( "tab", () => {
-        layoutWidget.focusNext().render()
+    screen.program.key( "tab", () => {
+        screen.focusNext().render()
     } )
 
-    layoutWidget.program.key( "S-tab", () => {
-        layoutWidget.focusPrevious().render()
+    screen.program.key( "S-tab", () => {
+        screen.focusPrevious().render()
     } )
 
-    Object.values( options.frames ).forEach( ( frame: FramePropsType ) => {
-        getFrame( Object.assign( {}, {
-            parent: layoutWidget,
-        }, frame ) )
-    } )
+    Object.values( options.frames ).forEach(
+        ( frameProps: FramePropsType ) => {
+            getFrame( Object.assign( {}, {
+                parent: screen,
+            }, frameProps ) )
+        } )
 
-    return layoutWidget
+    return screen
 }
 
 module.exports = {
-    getLayout: LayoutFactory,
+    getTermScreen: TermScreen,
 }

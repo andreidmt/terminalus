@@ -1,7 +1,6 @@
 // @flow
 
-// eslint-disable-next-line no-unused-vars
-const _debug = require( "debug" )( "Dashboard:M" )
+const debug = require( "debug" )( "Terminalus:M" )
 
 /**
  * In goes me, out goes other me
@@ -63,8 +62,9 @@ const type = <T> ( input: T ): string =>
 
  * @return {boolean} If source is of type
  */
-const is = ( _type: string, source: mixed ): boolean =>
-    _type === type( source )
+const is = ( _type: string | string[], source: mixed ): boolean =>
+    type( _type ) === "Array" ? _type.indexOf( type( source ) ) !== -1 :
+        _type === type( source )
 
 /**
  * Iterate over an input list, calling `fn` for each element in the list.
@@ -91,7 +91,7 @@ const forEach = <T: mixed[]> ( list: T, fn: Function ): T => {
  * @type    {<type>}
  * @example { example }
  */
-const forEachKey = <T: { [key: string]: mixed }> (
+const forEachKey = <T: { [string]: mixed }> (
     input: T,
     fn: ( key: string, value: mixed ) => void
 ): T => {
@@ -105,6 +105,19 @@ const forEachKey = <T: { [key: string]: mixed }> (
     return input
 }
 
+const has = ( input: {}, prop: string ) =>
+    Object.hasOwnProperty.call( input, prop )
+
+
+type NestedArrayType<T> = Array <T | NestedArrayType <T>>
+
+const flatten = <T>( input: NestedArrayType <T> ): Array <T> =>
+    input.reduce( ( acc, elm ) => {
+        const _elm = Array.isArray( elm ) ? flatten( elm ) : [ elm ]
+
+        return [ ..._elm, ...acc ]
+    }, [] )
+
 /**
  * { function_description }
  *
@@ -114,11 +127,20 @@ const forEachKey = <T: { [key: string]: mixed }> (
  * @example
  * round(3.4456,2) //=>
  */
-const round = ( input: number, decimalPlaces: number = 0 ) => {
-    const powOf10 = 10 ** decimalPlaces
+const round = ( input: number, decimalPlaces: number = 2 ) =>
+    Number( input.toFixed( decimalPlaces ) )
 
-    return Math.round( input * powOf10 ) / powOf10
-}
+/**
+ * { item_description }
+ *
+ * @param {number} x { parameter_description }
+ * @param {number} y { parameter_description }
+ * @param {number} decimalPlaces { parameter_description }
+ *
+ * @return {number} { description_of_the_return_value }
+ */
+const percent = ( x: number, y: number, decimalPlaces: number = 2 ): number =>
+    round( ( x / 100 ) * y, decimalPlaces )
 
 /**
  * Performs left-to-right function composition. The leftmost function may have
@@ -280,4 +302,7 @@ module.exports = {
     if: If,
     isSomething,
     round,
+    percent,
+    has,
+    flatten,
 }

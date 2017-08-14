@@ -1,7 +1,6 @@
 "use strict";
 
-// eslint-disable-next-line no-unused-vars
-const _debug = require("debug")("Dashboard:M");
+const debug = require("debug")("Terminalus:M");
 
 /**
  * In goes me, out goes other me
@@ -58,7 +57,7 @@ const type = input => input === null ? "Null" : input === undefined ? "Undefined
 
  * @return {boolean} If source is of type
  */
-const is = (_type, source) => _type === type(source);
+const is = (_type, source) => type(_type) === "Array" ? _type.indexOf(type(source)) !== -1 : _type === type(source);
 
 /**
  * Iterate over an input list, calling `fn` for each element in the list.
@@ -96,6 +95,14 @@ const forEachKey = (input, fn) => {
     return input;
 };
 
+const has = (input, prop) => Object.hasOwnProperty.call(input, prop);
+
+const flatten = input => input.reduce((acc, elm) => {
+    const _elm = Array.isArray(elm) ? flatten(elm) : [elm];
+
+    return [..._elm, ...acc];
+}, []);
+
 /**
  * { function_description }
  *
@@ -105,11 +112,18 @@ const forEachKey = (input, fn) => {
  * @example
  * round(3.4456,2) //=>
  */
-const round = (input, decimalPlaces = 0) => {
-    const powOf10 = 10 ** decimalPlaces;
+const round = (input, decimalPlaces = 2) => Number(input.toFixed(decimalPlaces));
 
-    return Math.round(input * powOf10) / powOf10;
-};
+/**
+ * { item_description }
+ *
+ * @param {number} x { parameter_description }
+ * @param {number} y { parameter_description }
+ * @param {number} decimalPlaces { parameter_description }
+ *
+ * @return {number} { description_of_the_return_value }
+ */
+const percent = (x, y, decimalPlaces = 2) => round(x / 100 * y, decimalPlaces);
 
 /**
  * Performs left-to-right function composition. The leftmost function may have
@@ -257,5 +271,8 @@ module.exports = {
     equals,
     if: If,
     isSomething,
-    round
+    round,
+    percent,
+    has,
+    flatten
 };
