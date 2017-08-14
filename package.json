@@ -8,7 +8,7 @@
     "setup:flow": "rm -rf ./flow-typed && flow-typed install",
     "setup": "rm -f package-lock.json && rm -rf ./node_modules && npm i",
     "postinstall": "npm run setup:flow",
-    "start": "DEBUG=Terminalus* babel-node source/index.js",
+    "start": "DEBUG=Terminalus* DEBUG_DEPTH=13 babel-node source/index.js",
     "lint": "eslint source/",
     "lint:fix": "eslint_d --color --fix source/",
     "test": "tape -r babel-register tests/**/*.js | tap-diff",
@@ -24,7 +24,7 @@
     "babel-eslint": "7.2.3",
     "babel-preset-env": "1.6.0",
     "babel-preset-flow": "6.23.0",
-    "debug": "2.6.8",
+    "debug": "3.0.0",
     "eslint": "4.4.1",
     "eslint-plugin-compat": "1.0.4",
     "eslint-plugin-flowtype": "2.35.0",
@@ -48,6 +48,8 @@
     "boxen": "1.2.1",
     "chalk": "2.1.0",
     "node-notifier": "5.1.2",
+    "ramda": "0.24.1",
+    "rxjs": "5.4.3",
     "rc": "1.2.1"
   }
 }
