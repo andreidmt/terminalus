@@ -1,20 +1,20 @@
 "use strict";
 
-module.exports = {
+const debug = require("debug")("Terminalus:Meta:Status");
+const chalk = require("chalk");
 
-    //
-    align: "right",
+/**
+ * Process status meta
+ *
+ * @param   {object}  props  The properties meta properties type
+ * @param   {<type>}  frameState           The frame state
+ * @return  {string}  { description_of_the_return_value }
+ * @example { example }
+ */
+module.exports = (props, frameState) => {
+    debug({
+        frameState
+    });
 
-    //
-    bold: true,
-
-    // default value "@"
-    format: "[ @ ]",
-
-    // events that trigger main function
-    subscribe: ["child:status", "child:spawn"],
-
-    meta(frame, status, spawn) {
-        return this.format.replace("@", "lorem");
-    }
+    return "asd";
 };
