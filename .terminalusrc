@@ -5,22 +5,20 @@
             "label": "ESLint",
             "cmd": "npm",
             "args": [ "run", "lint", "--", "--color" ],
-            "stderr": false,
-            "watch":  "source/**/*.js"
+            "watch":  "source/**/*.js",
+            "pipeError": false
         },
         "flow": {
             "label": "Flow",
             "cmd": "npm",
             "args": [ "run", "flow", "--", "--color=always" ],
-            "stderr": false,
-            "clearOnRestart": true
+            "clear": true
         },
         "tape": {
             "label": "Tape",
             "cmd": "npm",
             "args": [ "run", "test", "--", "--color" ],
-            "stderr": false,
-            "clearOnRestart": true,
+            "clear": true,
             "meta": [ "status" ]
         },
         "babel": {
@@ -31,7 +29,8 @@
         "debug": {
             "label": "Node inspect",
             "cmd": "node",
-            "args": [ "--inspect-brk", "source/test.js" ]
+            "args": [ "--inspect-brk", "source/test.js" ],
+            "clear": true
         }
     },
 

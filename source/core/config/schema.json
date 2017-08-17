@@ -23,7 +23,6 @@
                 "^[a-z]+$": {
                     "type": "object",
                     "required": [ "cmd" ],
-
                     "additionalProperties": false,
                     "properties": {
                         "label": {
@@ -38,11 +37,11 @@
                                 "type": "string"
                             }
                         },
-                        "stderr": {
+                        "pipeError": {
                             "type": "boolean",
                             "default": true
                         },
-                        "clearOnRestart": {
+                        "clear": {
                             "type": "boolean",
                             "default": false
                         },
@@ -53,7 +52,8 @@
                             "type": "array",
                             "items": {
                                 "type": "string"
-                            }
+                            },
+                            "default": []
                         }
                     }
                 }
