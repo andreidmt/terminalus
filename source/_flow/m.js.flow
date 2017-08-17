@@ -1,3 +1,0 @@
-// @flow
-
-declare function identity<T> ( me: T ): T

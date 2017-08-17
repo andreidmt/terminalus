@@ -1,9 +1,0 @@
-// @flow
-
-declare type Blessed$Log = {
-    log: ( input: string ) => void;
-}
-
-declare type Blessed$Screen = any
-
-declare type Blessed$Text = any
