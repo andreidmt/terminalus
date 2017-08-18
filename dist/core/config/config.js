@@ -202,4 +202,4 @@ _ramda2.default.mergeDeepRight(_ramda2.default.pipe(_ramda2.default.pick(["layou
 _ramda2.default.sortWith([_ramda2.default.ascend(_ramda2.default.prop("top")), _ramda2.default.ascend(_ramda2.default.prop("left"))]),
 
 // array => obj indexed by frame slug
-_ramda2.default.reduce((acc, frame) => _ramda2.default.set(_ramda2.default.lensProp(frame.slug), frame, acc), {}))(config), _ramda2.default.view(_ramda2.default.lensProp("frames"), config)), config))(`${process.cwd()}/package.json`, { encoding: "utf8" });
+_ramda2.default.indexBy(_ramda2.default.prop("slug")))(config), _ramda2.default.view(_ramda2.default.lensProp("frames"), config)), config))(`${process.cwd()}/package.json`, { encoding: "utf8" });

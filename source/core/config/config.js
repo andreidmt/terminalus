@@ -205,8 +205,8 @@ export const getConfig = () => R.pipe(
                 ] ),
 
                 // array => obj indexed by frame slug
-                R.reduce( ( acc, frame ) =>
-                    R.set( R.lensProp( frame.slug ), frame, acc ), {} ),
+                R.indexBy( R.prop( "slug" ) ),
+
             )( config ),
             R.view( R.lensProp( "frames" ), config ),
         ), config ),
