@@ -4,14 +4,15 @@ import I from "immutable"
 import R from "ramda"
 
 /**
- * Object with get/set/changed, interfacing immutable map
+ * Object with get/set/delete/hasChanged, interfacing immutable map and keeping
+ * history
  *
- * @param   {Object}    initialState   The initial state
- * @param   {Object}    opt            The option
- * @param   {number}    opt.maxLength  How many changes should be remembered
- * @param   {Function}  opt.afterSet   Callback after running set
+ * @param   {Object}    initialState
+ * @param   {Object}    opt
+ * @param   {number}    opt.maxLength     How many changes should be remembered
+ * @param   {Function}  opt.afterUpdate   Callback after running set/delete
  *
- * @return  {Object}    Object with get/set/changed, interfacing immutable map
+ * @return  {Object}  Object with get/set/changed, interfacing immutable map
  *
  * @example const state = stateWithHistory({lorem: "ipsum"})
  */
@@ -36,7 +37,7 @@ export default function StateWithHistory( initialState = {}, opt ) {
         history.length > props.maxLength && history.pop()
 
         // trigger callback with current & prev versions
-        props.afterSet && props.afterSet( history[ 0 ], history[ 1 ] )
+        props.afterUpdate && props.afterUpdate( history[ 0 ], history[ 1 ] )
     }
 
     return {
