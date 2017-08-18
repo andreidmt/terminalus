@@ -2,7 +2,7 @@
 
 > npm terminal dashboard
 
-![Terminalus](https://raw.githubusercontent.com/codemachiner/npm-teminalus/master/docs/terminal.png)
+![Terminalus](https://raw.githubusercontent.com/codemachiner/npm-teminalus/master/docs/terminal.gif)
 
 ---
 
