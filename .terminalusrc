@@ -6,7 +6,7 @@
             "cmd": "npm",
             "args": [ "run", "lint", "--", "--color" ],
             "watch":  "source/**/*.js",
-            "pipeError": false
+            "pipeError": true
         },
         "flow": {
             "label": "Flow",
