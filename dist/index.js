@@ -36,19 +36,6 @@ tScreen.program.key(["C-c"], () => {
     tScreen.destroy();
 });
 
-tScreen.program.key("tab", () => {
-    tScreen.focusNext().render();
-});
-
-tScreen.program.key("S-tab", () => {
-    tScreen.focusPrevious().render();
-});
-
-tScreen.program.key("escape", () => {
-    tScreen.focused.emit("blur");
-    tScreen.render();
-});
-
 /**
  * Add frames
  */
@@ -56,5 +43,4 @@ Object.values(tConfig.frames).forEach(frameProps => new _tFrame.TFrame(_ramda2.d
     parent: tScreen
 })));
 
-tScreen.focused = tScreen.children[0];
-tScreen.render();
+tScreen.children[0].emit("focus");

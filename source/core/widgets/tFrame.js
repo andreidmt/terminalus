@@ -50,7 +50,7 @@ const DEFAULT_FRAME_PROPS = {
 /**
  * Log element with a background command piping it's output
  *
- * @class   Frame
+ * @class   TFrame
  *
  * @param   {Object}    props            Frame properties
  * @param   {string}    props.label      Frame title
@@ -92,9 +92,10 @@ export function TFrame( props ) {
         processSignal: null,
         isFullScreen : false,
     }, {
-        // everytime something changes, rerender
-        afterSet: ( prevState, nextState ) => {
-            this.parent.render( prevState, nextState )
+        // on set/delete rerender
+        afterUpdate: () => {
+            this.prepareForRender()
+            this.parent.render()
         },
     } )
 
@@ -105,40 +106,6 @@ export function TFrame( props ) {
     } )
 
     /*
-     * Kinda like React.render, keep visual related stuff here
-     */
-    this.on( "prerender", () => {
-
-        // debug( {
-        // code: this.state.get( "processCode" ),
-        // } )
-
-        // size
-        // this.state.get( "isFullScreen" ) ? this.toFullscreen() : this.toOriginal()
-
-        //
-        const color = this.state.get( "processCode" ) === null ? chalk.blue :
-            this.state.get( "processCode" ) === 0 ? chalk.green : chalk.red
-
-        // this.state.meta.map( meta => metaSet.get( meta ) )
-
-        this.setLabel( ` ${ color( unicode.square ) } ${ this.props.label } ` )
-    } )
-
-    /**
-     * Link meta listeners to frame events
-     */
-    // this.props.meta.map( M.pipe(
-    //     ( metaName: string ) =>
-    //         require( `../meta/${metaName}` ),
-    //     metaObj =>
-    //         Object.entries( metaObj.subscribe ).forEach(
-    //             ( [ eventName: string, listener: Function ] ) => {
-    //                 this.on( eventName, listener )
-    //             } )
-    // ) )
-
-    /*
      * Respawn process on enter key press
      */
     this.key( [ "enter" ], () => {
@@ -147,24 +114,38 @@ export function TFrame( props ) {
         } )
     } )
 
+    /*
+     * Make window fullscreen
+     */
     this.key( [ "f" ], () => {
         this.state.set( {
-            isFullScreen: !this.state.get( "isFullscreen" ),
+            isFullScreen: !this.state.get( "isFullScreen" ),
         } )
     } )
 
     /*
-     * Highlight box title
+     * Only tab if not in fullscreen
      */
-    this.on( "focus", () => {
-        this.render()
+    this.key( "tab", () => {
+        if ( !this.state.get( "isFullScreen" ) ) {
+            this.parent.focusNext().render()
+        }
     } )
 
-    /*
-     * Reset box title to original
-     */
-    this.on( "blur", () => {
-        this.render()
+    this.key( "S-tab", () => {
+        if ( !this.state.get( "isFullScreen" ) ) {
+            this.parent.focusPrevious().render()
+        }
+    } )
+
+    this.key( "escape", () => {
+        if ( this.state.get( "isFullScreen" ) ) {
+            this.state.set( {
+                isFullScreen: false,
+            } )
+        } else {
+            this.emit( "blur" )
+        }
     } )
 
     /*
@@ -183,17 +164,43 @@ TFrame.prototype = Object.create( Log.prototype, {
         writable    : true,
     },
 
-    toFullscreen: {
-        value: function toFullscreen() {
-            this.left = 0
-            this.top = 0
+    /*
+     * Kinda like React.render, keep visual related stuff here
+     */
+    prepareForRender: {
+        value: function prepareForRender() {
+            // window size
+            this.state.get( "isFullScreen" ) ? this.setFullSize() :
+                this.setLayoutSize()
+
+            // label
+            const color =
+                this.state.get( "processCode" ) === null ? chalk.blue :
+                    this.state.get( "processCode" ) === 0 ? chalk.green :
+                        chalk.red
+
+            this.setLabel( ` ${ color( unicode.square ) } ${ this.props.label } ` )
         },
     },
 
-    toOriginal: {
-        value: function toOriginal() {
-            this.left = this.props.left
+    setFullSize: {
+        value: function setFullSize() {
+            this.left = 0
             this.top = 0
+            this.width = this.parent.width
+            this.height = this.parent.height
+            this.setFront()
+            this.setScrollPerc( 100 )
+        },
+    },
+
+    setLayoutSize: {
+        value: function setLayoutSize() {
+            this.left = this.props.left
+            this.top = this.props.top
+            this.width = this.props.width
+            this.height = this.props.height
+            this.setScrollPerc( 100 )
         },
     },
 
