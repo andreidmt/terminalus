@@ -15,8 +15,8 @@
   "author": "Andrei Dumitrescu <andrei@codemachiner.com> (https://twitter.com/andreidcm)",
   "license": "ISC",
   "devDependencies": {
-    "@codemachiner/eslint-config": "2.7.0",
-    "babel-cli": "^6.26.0",
+    "@codemachiner/eslint-config": "2.7.2",
+    "babel-cli": "6.26.0",
     "babel-eslint": "7.2.3",
     "babel-preset-env": "1.6.0",
     "debug": "3.0.0",
