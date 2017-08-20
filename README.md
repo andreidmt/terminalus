@@ -1,8 +1,8 @@
-# WIP: Terminalus
+# Terminalus (Work in progress)
 
 > npm terminal dashboard
 
-![Terminalus](https://raw.githubusercontent.com/codemachiner/npm-teminalus/master/docs/terminal.gif)
+![Terminalus](https://raw.githubusercontent.com/codemachiner/npm-teminalus/master/docs/terminal.png)
 
 ---
 
