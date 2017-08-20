@@ -10,6 +10,10 @@ var _ramda = require("ramda");
 
 var _ramda2 = _interopRequireDefault(_ramda);
 
+var _chokidar = require("chokidar");
+
+var _chokidar2 = _interopRequireDefault(_chokidar);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 const debug = require("debug")("Terminalus");
@@ -17,8 +21,8 @@ const debug = require("debug")("Terminalus");
 /**
  * Init config & screen
  */
-const tConfig = (0, _config.getConfig)();
-const tScreen = new _blessed.Screen(_ramda2.default.merge({
+const config = (0, _config.getConfig)();
+const screen = new _blessed.Screen(_ramda2.default.merge({
     tabSize: 4,
     smartCSR: true,
     fullUnicode: true,
@@ -26,21 +30,35 @@ const tScreen = new _blessed.Screen(_ramda2.default.merge({
     padding: 0,
     autoPadding: true
 }, {
-    title: tConfig.title
+    title: config.title
 }));
 
 /**
  * Keyboard shortcuts
  */
-tScreen.program.key(["C-c"], () => {
-    tScreen.destroy();
+screen.program.key(["C-c"], () => {
+    screen.destroy();
 });
 
 /**
- * Add frames
+ * Crate frame widgets
  */
-Object.values(tConfig.frames).forEach(frameProps => new _tFrame.TFrame(_ramda2.default.merge(frameProps, {
-    parent: tScreen
-})));
+_ramda2.default.map(frameProps => new _tFrame.TFrame(_ramda2.default.merge(frameProps, {
+    parent: screen
+})))(config.frames);
 
-tScreen.children[0].emit("focus");
+// Focus first one
+screen.children[0].emit("focus");
+
+/**
+ *  Watch patterns from all frames. Screen will emit event on file change
+ *  and each frame (with watch defined) will match the file path with it's
+ *  pattern ... if it matches then respawn the process
+ */
+config.watch && _chokidar2.default.watch(config.watch, {
+    cwd: process.cwd(),
+    ignore: config.ignore,
+    ignoreInitial: true
+}).on("all", (event, path) => {
+    screen.emit("watch", path, event);
+});

@@ -166,39 +166,19 @@ const layoutPosition = coord => layout => {
  *
  * @return {Object[]}  Updated frames object
  */
-const checkNPMScript = (scripts, frames) => _ramda2.default.mapObjIndexed(frame => _ramda2.default.ifElse(_ramda2.default.has(frame.cmd), () => _ramda2.default.merge(frame, {
+const replaceIfNPMScript = config => _ramda2.default.map(frame => _ramda2.default.ifElse(_ramda2.default.has(frame.cmd), () => _ramda2.default.merge(frame, {
     cmd: "npm",
     args: _ramda2.default.concat(["run", frame.cmd], frame.args)
-}), () => frame)(scripts))(frames);
+}), () => frame)(config.scripts))(config.frames);
 
 /**
- * Parse package.json, merge with RC config, json validate
+ * { lambda_description }
  *
- * @return {Object}  The configuration.
+ * @param  {<type>}  config  The configuration
+ *
+ * @return {<type>}  { description_of_the_return_value }
  */
-const getConfig = exports.getConfig = () => _ramda2.default.pipe(
-
-// read package.json content
-_fs.readFileSync, JSON.parse,
-
-// merge data from package.json and .rc file
-pkgJSON => (0, _rc2.default)(pkgJSON.name, {
-    name: pkgJSON.name,
-    scripts: pkgJSON.scripts,
-    dependencies: _ramda2.default.merge(pkgJSON.dependencies, pkgJSON.devDependencies)
-}),
-
-// pass config through json schema
-validateConfig,
-
-// check if frame.cmd is a npm script
-config => _ramda2.default.set(_ramda2.default.lensProp("frames"), _ramda2.default.converge(checkNPMScript, [_ramda2.default.prop("scripts"), _ramda2.default.prop("frames")])(config))(config),
-
-// calculate frames position based on the layout setting
-config => _ramda2.default.set(_ramda2.default.lensProp("frames"),
-
-// merge config frame settings with calculated positions
-_ramda2.default.mergeDeepRight(_ramda2.default.pipe(_ramda2.default.pick(["layout"]), layoutPosition({
+const joinWithPositions = config => _ramda2.default.mergeDeepRight(_ramda2.default.pipe(_ramda2.default.pick(["layout"]), layoutPosition({
     isTD: true,
     top: 0,
     left: 0,
@@ -210,4 +190,34 @@ _ramda2.default.mergeDeepRight(_ramda2.default.pipe(_ramda2.default.pick(["layou
 _ramda2.default.sortWith([_ramda2.default.ascend(_ramda2.default.prop("top")), _ramda2.default.ascend(_ramda2.default.prop("left"))]),
 
 // array => obj indexed by frame slug
-_ramda2.default.indexBy(_ramda2.default.prop("slug")))(config), _ramda2.default.view(_ramda2.default.lensProp("frames"), config)), config))(`${process.cwd()}/package.json`, { encoding: "utf8" });
+_ramda2.default.indexBy(_ramda2.default.prop("slug")))(config), _ramda2.default.view(_ramda2.default.lensProp("frames"), config));
+
+/**
+ * Parse package.json, merge with RC config, json validate
+ *
+ * @return {Object}  The configuration.
+ */
+const getConfig = exports.getConfig = () => _ramda2.default.pipe(
+
+// Read package.json content
+_fs.readFileSync, JSON.parse,
+
+// Merge data from package.json and .rc file
+pkgJSON => (0, _rc2.default)(pkgJSON.name, {
+    name: pkgJSON.name,
+    scripts: pkgJSON.scripts,
+    dependencies: _ramda2.default.merge(pkgJSON.dependencies, pkgJSON.devDependencies)
+}),
+
+// Pass config through json schema
+validateConfig,
+
+// Check if frame.cmd is a npm script
+config => _ramda2.default.set(_ramda2.default.lensProp("frames"), replaceIfNPMScript(config))(config),
+
+// Join each frame.watch into config.watch
+config => _ramda2.default.set(_ramda2.default.lensProp("watch"), _ramda2.default.pipe(_ramda2.default.pluck("watch"), _ramda2.default.reject(_ramda2.default.isNil), _ramda2.default.values, _ramda2.default.uniq)(config.frames))(config),
+
+// Calculate frames position based on the layout setting and merge with
+// frame config
+config => _ramda2.default.set(_ramda2.default.lensProp("frames"), joinWithPositions(config))(config))(`${process.cwd()}/package.json`, { encoding: "utf8" });

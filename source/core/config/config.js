@@ -157,8 +157,8 @@ const layoutPosition = coord => layout => {
  *
  * @return {Object[]}  Updated frames object
  */
-const checkNPMScript = ( scripts, frames ) =>
-    R.mapObjIndexed( frame =>
+const replaceIfNPMScript = config =>
+    R.map( frame =>
         R.ifElse(
             R.has( frame.cmd ),
             () => R.merge( frame, {
@@ -166,8 +166,40 @@ const checkNPMScript = ( scripts, frames ) =>
                 args: R.concat( [ "run", frame.cmd ], frame.args ),
             } ) ,
             () => frame
-        )( scripts )
-    )( frames )
+        )( config.scripts )
+    )( config.frames )
+
+/**
+ * { lambda_description }
+ *
+ * @param  {<type>}  config  The configuration
+ *
+ * @return {<type>}  { description_of_the_return_value }
+ */
+const joinWithPositions = config =>
+    R.mergeDeepRight(
+        R.pipe(
+            R.pick( [ "layout" ] ),
+            layoutPosition( {
+                isTD  : true,
+                top   : 0,
+                left  : 0,
+                width : 100,
+                height: 100,
+            } ),
+
+            // proper tabbing
+            R.sortWith( [
+                R.ascend( R.prop( "top" ) ),
+                R.ascend( R.prop( "left" ) ),
+            ] ),
+
+            // array => obj indexed by frame slug
+            R.indexBy( R.prop( "slug" ) ),
+
+        )( config ),
+        R.view( R.lensProp( "frames" ), config ),
+    )
 
 /**
  * Parse package.json, merge with RC config, json validate
@@ -176,11 +208,11 @@ const checkNPMScript = ( scripts, frames ) =>
  */
 export const getConfig = () => R.pipe(
 
-    // read package.json content
+    // Read package.json content
     readFileSync,
     JSON.parse,
 
-    // merge data from package.json and .rc file
+    // Merge data from package.json and .rc file
     pkgJSON => rc( pkgJSON.name, {
         name        : pkgJSON.name,
         scripts     : pkgJSON.scripts,
@@ -190,45 +222,30 @@ export const getConfig = () => R.pipe(
         ),
     } ),
 
-    // pass config through json schema
+    // Pass config through json schema
     validateConfig,
 
-    // check if frame.cmd is a npm script
+    // Check if frame.cmd is a npm script
     config => R.set(
         R.lensProp( "frames" ),
-        R.converge( checkNPMScript, [
-            R.prop( "scripts" ),
-            R.prop( "frames" ),
-        ] )( config )
+        replaceIfNPMScript( config ),
     )( config ),
 
-    // calculate frames position based on the layout setting
+    // Join each frame.watch into config.watch
+    config => R.set(
+        R.lensProp( "watch" ),
+        R.pipe(
+            R.pluck( "watch" ),
+            R.reject( R.isNil ),
+            R.values,
+            R.uniq,
+        )( config.frames )
+    )( config ),
+
+    // Calculate frames position based on the layout setting and merge with
+    // frame config
     config => R.set(
         R.lensProp( "frames" ),
-
-        // merge config frame settings with calculated positions
-        R.mergeDeepRight(
-            R.pipe(
-                R.pick( [ "layout" ] ),
-                layoutPosition( {
-                    isTD  : true,
-                    top   : 0,
-                    left  : 0,
-                    width : 100,
-                    height: 100,
-                } ),
-
-                // proper tabbing
-                R.sortWith( [
-                    R.ascend( R.prop( "top" ) ),
-                    R.ascend( R.prop( "left" ) ),
-                ] ),
-
-                // array => obj indexed by frame slug
-                R.indexBy( R.prop( "slug" ) ),
-
-            )( config ),
-            R.view( R.lensProp( "frames" ), config ),
-        ), config ),
-
+        joinWithPositions( config ),
+    )( config )
 )( `${process.cwd()}/package.json`, { encoding: "utf8" } )

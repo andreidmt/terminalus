@@ -71,12 +71,16 @@ const DEFAULT_FRAME_PROPS = {
  */
 export function TFrame( props ) {
 
-    // No new guard
+    /*
+     * Called without new guard
+     */
     if ( !( this instanceof TFrame ) ) {
         return new TFrame( props )
     }
 
-    // Parent constructor
+    /*
+     * Parent constructor
+     */
     Log.call( this, R.merge(
         R.clone( DEFAULT_FRAME_PROPS ),
         R.pick( [
@@ -98,16 +102,14 @@ export function TFrame( props ) {
         afterUpdate: ( prev, next ) => {
             if ( !is( prev, next ) ) {
                 this.prepareForRender()
-                this.emit( "render" )
+                this.parent.render()
             }
         },
     } )
 
     // Process will update the state on certain events, need the state to be
     // initialezed before running respawn
-    this.state.set( {
-        process: this.respawn(),
-    } )
+    this.respawn()
 
     this.key( "tab", () => {
         if ( !this.state.get( "isFullScreen" ) ) {
@@ -164,12 +166,7 @@ export function TFrame( props ) {
     this.key( "enter", () => {
         this.props.clear && this.clearContent()
         this.log( U.info( [ "Restarting", new Date() ].join( "\n" ) ) )
-
-        this.state.set( {
-            process      : this.respawn( this.state.get( "process" ) ),
-            processCode  : null,
-            processSignal: null,
-        } )
+        this.respawn()
     } )
 
     this.on( "click", () => {
@@ -182,6 +179,13 @@ export function TFrame( props ) {
 
     this.on( "destroy", () => {
         this.state.get( "process" ).kill()
+    } )
+
+    /**
+     *
+     */
+    this.props.watch && this.parent.on( "watch", ( event, path ) => {
+        this.log( U.info( `${ event }: ${ path }` ) )
     } )
 }
 
@@ -198,7 +202,6 @@ TFrame.prototype = Object.create( Log.prototype, {
      */
     prepareForRender: {
         value: function prepareForRender() {
-            // this.log( U.info( "PreRender" ) )
 
             // window size
             this.state.get( "isFullScreen" ) ? this.setFullSize() :
@@ -254,7 +257,7 @@ TFrame.prototype = Object.create( Log.prototype, {
      * @return {child_process$ChildProcess}  Newly spawned child process
      */
     respawn: {
-        value: function respawn( prevProcess ) {
+        value: function respawn() {
             return R.pipe(
 
                 // Kill old
@@ -268,8 +271,13 @@ TFrame.prototype = Object.create( Log.prototype, {
                     encoding : "utf8",
                 } ),
 
-                // Pipe process to log
+                // Pipe process to screen
                 newProcess => {
+
+                    this.state.set( {
+                        processCode  : null,
+                        processSignal: null,
+                    } )
 
                     // Configurable stderr printing
                     this.props.pipeError && ( () => {
@@ -300,9 +308,11 @@ TFrame.prototype = Object.create( Log.prototype, {
                             } )
                     )
 
-                    return newProcess
+                    this.state.set( {
+                        process: newProcess,
+                    } )
                 }
-            )( prevProcess )
+            )( this.state.get( "process" ) )
         },
     },
 
