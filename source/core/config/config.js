@@ -7,47 +7,30 @@ import { readFileSync } from "fs"
 import * as U from "../utils"
 
 /**
- * Merge conf options from .dashboardrc and package.json scripts
- *
- * @param  {Object}  packageJSON  package.json content
- *
- * @return {Object}  { description_of_the_return_value }
- */
-const _mergeWithRC = packageJSON =>
-    rc( packageJSON.name, {
-        name       : packageJSON.name,
-        pkg_scripts: packageJSON.scripts,
-    } )
-
-/**
  * Run config data through json schema validation
  *
- * @param  {Object}    data  The options
+ * @param  {Object}    condfigData  The condfig data
  *
  * @return {Function}  The layout position.
  */
-const _validateConfig = data => {
+const validateConfig = configData => {
 
-    const schema = require( "./schema.json" )
     const validate = new Ajv( {
         useDefaults: true,
         allErrors  : true,
         format     : "full",
-    } ).compile( schema )
+    } ).compile( require( "./schema.json" ) )
 
-    const returnType = {
-        true : () => data,
+    const isValid = {
+        true : () => configData,
         false: () => {
-            R.forEach( [
-                U.error( "VALIDATION ERROR: config data" ),
-                validate.errors,
-            ], console.log )
-
+            console.log( U.error( "VALIDATION ERROR: config data" ) )
+            console.log( validate.errors )
             process.exit( 1 )
         },
     }
 
-    return returnType[ validate( data ) ]()
+    return isValid[ validate( configData ) ]()
 }
 
 /**
@@ -123,8 +106,8 @@ const layoutPosition = coord => layout => {
         Object: () => {
             const undefSize = wildcardSize( Object.keys( layout ) )
 
-            return Object.keys( layout ).reduce( ( acc, item ) => {
-                const split = item.split( ":" )
+            return Object.keys( layout ).reduce( ( acc, name ) => {
+                const split = name.split( ":" )
                 const isTD = split[ 0 ] === "td"
                 const constraint = isTD ? coord.width : coord.height
 
@@ -152,7 +135,7 @@ const layoutPosition = coord => layout => {
                             left  : acc.coord.left,
                             width : isTD ? size : coord.width,
                             height: isTD ? coord.height : size,
-                        } )( layout[ item ] ),
+                        } )( layout[ name ] ),
                     ],
                 }
             }, {
@@ -166,7 +149,28 @@ const layoutPosition = coord => layout => {
 }
 
 /**
- * Parse package.json and merge with RC config
+ * Check if frame.cmd is a npm script. Update frame.cmd & frame.args to be
+ * compatible to child_process.spawn
+ *
+ * @param  {Object[]}  scripts  package.json scripts
+ * @param  {Object[]}  frames   Config frames
+ *
+ * @return {Object[]}  Updated frames object
+ */
+const checkNPMScript = ( scripts, frames ) =>
+    R.mapObjIndexed( frame =>
+        R.ifElse(
+            R.has( frame.cmd ),
+            () => R.merge( frame, {
+                cmd : "npm",
+                args: R.concat( [ "run", frame.cmd ], frame.args ),
+            } ) ,
+            () => frame
+        )( scripts )
+    )( frames )
+
+/**
+ * Parse package.json, merge with RC config, json validate
  *
  * @return {Object}  The configuration.
  */
@@ -177,10 +181,26 @@ export const getConfig = () => R.pipe(
     JSON.parse,
 
     // merge data from package.json and .rc file
-    _mergeWithRC,
+    pkgJSON => rc( pkgJSON.name, {
+        name        : pkgJSON.name,
+        scripts     : pkgJSON.scripts,
+        dependencies: R.merge(
+            pkgJSON.dependencies,
+            pkgJSON.devDependencies,
+        ),
+    } ),
 
     // pass config through json schema
-    _validateConfig,
+    validateConfig,
+
+    // check if frame.cmd is a npm script
+    config => R.set(
+        R.lensProp( "frames" ),
+        R.converge( checkNPMScript, [
+            R.prop( "scripts" ),
+            R.prop( "frames" ),
+        ] )( config )
+    )( config ),
 
     // calculate frames position based on the layout setting
     config => R.set(

@@ -30,43 +30,30 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 const debug = require("debug")("Terminalus:Config");
 
 /**
- * Merge conf options from .dashboardrc and package.json scripts
- *
- * @param  {Object}  packageJSON  package.json content
- *
- * @return {Object}  { description_of_the_return_value }
- */
-const _mergeWithRC = packageJSON => (0, _rc2.default)(packageJSON.name, {
-    name: packageJSON.name,
-    pkg_scripts: packageJSON.scripts
-});
-
-/**
  * Run config data through json schema validation
  *
- * @param  {Object}    data  The options
+ * @param  {Object}    condfigData  The condfig data
  *
  * @return {Function}  The layout position.
  */
-const _validateConfig = data => {
+const validateConfig = configData => {
 
-    const schema = require("./schema.json");
     const validate = new _ajv2.default({
         useDefaults: true,
         allErrors: true,
         format: "full"
-    }).compile(schema);
+    }).compile(require("./schema.json"));
 
-    const returnType = {
-        true: () => data,
+    const isValid = {
+        true: () => configData,
         false: () => {
-            _ramda2.default.forEach([U.error("VALIDATION ERROR: config data"), validate.errors], console.log);
-
+            console.log(U.error("VALIDATION ERROR: config data"));
+            console.log(validate.errors);
             process.exit(1);
         }
     };
 
-    return returnType[validate(data)]();
+    return isValid[validate(configData)]();
 };
 
 /**
@@ -133,8 +120,8 @@ const layoutPosition = coord => layout => {
         Object: () => {
             const undefSize = wildcardSize(Object.keys(layout));
 
-            return Object.keys(layout).reduce((acc, item) => {
-                const split = item.split(":");
+            return Object.keys(layout).reduce((acc, name) => {
+                const split = name.split(":");
                 const isTD = split[0] === "td";
                 const constraint = isTD ? coord.width : coord.height;
 
@@ -158,7 +145,7 @@ const layoutPosition = coord => layout => {
                         left: acc.coord.left,
                         width: isTD ? size : coord.width,
                         height: isTD ? coord.height : size
-                    })(layout[item])]
+                    })(layout[name])]
                 };
             }, {
                 coord,
@@ -171,7 +158,21 @@ const layoutPosition = coord => layout => {
 };
 
 /**
- * Parse package.json and merge with RC config
+ * Check if frame.cmd is a npm script. Update frame.cmd & frame.args to be
+ * compatible to child_process.spawn
+ *
+ * @param  {Object[]}  scripts  package.json scripts
+ * @param  {Object[]}  frames   Config frames
+ *
+ * @return {Object[]}  Updated frames object
+ */
+const checkNPMScript = (scripts, frames) => _ramda2.default.mapObjIndexed(frame => _ramda2.default.ifElse(_ramda2.default.has(frame.cmd), () => _ramda2.default.merge(frame, {
+    cmd: "npm",
+    args: _ramda2.default.concat(["run", frame.cmd], frame.args)
+}), () => frame)(scripts))(frames);
+
+/**
+ * Parse package.json, merge with RC config, json validate
  *
  * @return {Object}  The configuration.
  */
@@ -181,10 +182,17 @@ const getConfig = exports.getConfig = () => _ramda2.default.pipe(
 _fs.readFileSync, JSON.parse,
 
 // merge data from package.json and .rc file
-_mergeWithRC,
+pkgJSON => (0, _rc2.default)(pkgJSON.name, {
+    name: pkgJSON.name,
+    scripts: pkgJSON.scripts,
+    dependencies: _ramda2.default.merge(pkgJSON.dependencies, pkgJSON.devDependencies)
+}),
 
 // pass config through json schema
-_validateConfig,
+validateConfig,
+
+// check if frame.cmd is a npm script
+config => _ramda2.default.set(_ramda2.default.lensProp("frames"), _ramda2.default.converge(checkNPMScript, [_ramda2.default.prop("scripts"), _ramda2.default.prop("frames")])(config))(config),
 
 // calculate frames position based on the layout setting
 config => _ramda2.default.set(_ramda2.default.lensProp("frames"),

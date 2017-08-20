@@ -3,28 +3,28 @@
     "frames": {
         "eslint": {
             "label": "ESLint",
-            "cmd": "npm",
-            "args": [ "run", "lint", "--", "--color" ],
+            "cmd": "lint",
+            "args": [ "--", "--color" ],
             "watch":  "source/**/*.js",
             "pipeError": true
         },
         "flow": {
             "label": "Flow",
-            "cmd": "npm",
-            "args": [ "run", "flow", "--", "--color=always" ],
+            "cmd": "flow",
+            "args": [ "--", "--color=always" ],
             "clear": true
         },
         "tape": {
             "label": "Tape",
-            "cmd": "npm",
-            "args": [ "run", "test", "--", "--color" ],
+            "cmd": "test",
+            "args": [ "--", "--color" ],
             "clear": true,
             "meta": [ "status" ]
         },
         "babel": {
             "label": "Babel",
-            "cmd": "npm",
-            "args": [ "run", "build", "--", "--color" ]
+            "cmd": "build",
+            "args": [ "--", "--color" ]
         },
         "debug": {
             "label": "Node inspect",
