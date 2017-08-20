@@ -19,37 +19,46 @@ _tape2.default.createStream().pipe((0, _tapDiff2.default)()).pipe(process.stdout
 (0, _tape2.default)("Immutable Map with history", assert => {
 
     const testMap = (0, _state2.default)({
-        lorem: "ipsum"
+        single: "leave me alone",
+        update: "paarty",
+        boolean: true
     });
 
-    assert.equal("ipsum", testMap.get("lorem"), ".get - Get existing prop after init (expect string)");
+    assert.equal("leave me alone", testMap.get("single"), ".get - Get existing prop after init (expect string)");
 
     assert.equal(undefined, testMap.get("not-exist"), ".get - Get non-existing prop after init (expect undefined)");
 
-    assert.equal(false, testMap.hasChanged("lorem"), ".hasChanged - Check prop after init (expect false)");
+    assert.equal(true, testMap.get("boolean"), ".get - Get boolean prop after init (expect true)");
+
+    //
+    //
+    testMap.set({
+        boolean: !testMap.get("boolean"),
+        update: "ooh yeah",
+        new: "im blue"
+    });
+
+    assert.equal(false, testMap.get("boolean"), ".set,.get - Get boolean prop after toggle (expect false)");
+
+    assert.equal("ooh yeah", testMap.get("update"), ".set,.get - Get updated prop");
+
+    assert.equal(false, testMap.hasChanged("single"), ".hasChanged - Check prop after init (expect false)");
 
     assert.equal(false, testMap.hasChanged("not-exist"), ".hasChanged - Check non-existing prop (expect false)");
 
-    testMap.set({
-        lorem: "ipsum dolor",
-        sit: "amen"
-    });
+    assert.equal(true, testMap.hasChanged("update"), ".hasChanged - Updated prop (expect true)");
 
-    assert.equal("ipsum dolor", testMap.get("lorem"), ".get - Get updated prop");
-
-    assert.equal(true, testMap.hasChanged("lorem"), ".hasChanged - Updated prop (expect true)");
-
-    assert.equal(true, testMap.hasChanged("sit"), ".hasChanged - New prop (expect true)");
+    assert.equal(true, testMap.hasChanged("new"), ".hasChanged - New prop (expect true)");
 
     testMap.set({
-        lorem: "ipsum dolor"
+        new: "im blue"
     });
 
-    assert.equal(false, testMap.hasChanged("lorem"), ".hasChanged - Updated prop with same value (expect false)");
+    assert.equal(false, testMap.hasChanged("new"), ".hasChanged - Updated prop with same value (expect false)");
 
-    assert.equal(undefined, testMap.delete("lorem").get("lorem"), ".delete.get - Chain: detele existing -> get (expect undefined)");
+    assert.equal(undefined, testMap.delete("new").get("new"), ".delete.get - Chain: detele existing -> get (expect undefined)");
 
-    assert.equal(true, testMap.delete("sit").hasChanged("sit"), ".delete.hasChanged - Chain: delete existing -> hasChanged` (expect true)");
+    assert.equal(true, testMap.delete("update").hasChanged("update"), ".delete.hasChanged - Chain: delete existing -> hasChanged` (expect true)");
 
     assert.end();
 });

@@ -36,8 +36,8 @@ export default function StateWithHistory( initialState = {}, opt ) {
         // pop one out if history too big (unshift returns the new length)
         history.length > props.maxLength && history.pop()
 
-        // trigger callback with current & prev versions
-        props.afterUpdate && props.afterUpdate( history[ 0 ], history[ 1 ] )
+        // trigger callback with prev & next versions
+        props.afterUpdate && props.afterUpdate( history[ 1 ], history[ 0 ] )
     }
 
     return {

@@ -5,6 +5,7 @@ import { spawn } from "child_process"
 import R from "ramda"
 import chalk from "chalk"
 import unicode from "figures"
+import { is } from "immutable"
 
 import * as U from "../utils"
 import stateWithHistory from "../state/state"
@@ -13,7 +14,9 @@ const DEFAULT_FRAME_PROPS = {
     scrollable  : true,
     input       : true,
     alwaysScroll: true,
-    scrollbar   : {
+
+    // grabKeys    : true,
+    scrollbar: {
         ch     : " ",
         inverse: true,
     },
@@ -92,10 +95,11 @@ export function TFrame( props ) {
         processSignal: null,
         isFullScreen : false,
     }, {
-        // on set/delete rerender
-        afterUpdate: () => {
-            this.prepareForRender()
-            this.parent.render()
+        afterUpdate: ( prev, next ) => {
+            if ( !is( prev, next ) ) {
+                this.prepareForRender()
+                this.emit( "render" )
+            }
         },
     } )
 
@@ -105,52 +109,77 @@ export function TFrame( props ) {
         process: this.respawn(),
     } )
 
-    /*
-     * Respawn process on enter key press
-     */
-    this.key( [ "enter" ], () => {
-        this.state.set( {
-            process: this.respawn( this.state.get( "process" ) ),
-        } )
-    } )
-
-    /*
-     * Make window fullscreen
-     */
-    this.key( [ "f" ], () => {
-        this.state.set( {
-            isFullScreen: !this.state.get( "isFullScreen" ),
-        } )
-    } )
-
-    /*
-     * Only tab if not in fullscreen
-     */
     this.key( "tab", () => {
         if ( !this.state.get( "isFullScreen" ) ) {
+            this.setOriginalSize()
             this.parent.focusNext().render()
         }
     } )
 
     this.key( "S-tab", () => {
         if ( !this.state.get( "isFullScreen" ) ) {
+            this.setOriginalSize()
             this.parent.focusPrevious().render()
         }
     } )
 
     this.key( "escape", () => {
-        if ( this.state.get( "isFullScreen" ) ) {
-            this.state.set( {
-                isFullScreen: false,
-            } )
-        } else {
-            this.emit( "blur" )
-        }
+        this.state.get( "isFullScreen" ) && this.state.set( {
+            isFullScreen: false,
+        } )
     } )
 
     /*
-     * Cleanup
+     * Q: Clear frame
      */
+    this.key( "q", () => {
+        this.clearContent()
+    } )
+
+    /*
+     * W:
+     */
+
+    /*
+     * E:
+     */
+
+    /*
+     * R:
+     */
+
+    /*
+     * F: Toggle fullscreen
+     */
+    this.key( "f", () => {
+        // this.log( U.info( "Key: F (fullscreen toggle)" ) )
+        this.state.set( {
+            isFullScreen: !this.state.get( "isFullScreen" ),
+        } )
+    } )
+
+    /*
+     * Enter: restart process
+     */
+    this.key( "enter", () => {
+        this.props.clear && this.clearContent()
+        this.log( U.info( [ "Restarting", new Date() ].join( "\n" ) ) )
+
+        this.state.set( {
+            process      : this.respawn( this.state.get( "process" ) ),
+            processCode  : null,
+            processSignal: null,
+        } )
+    } )
+
+    this.on( "click", () => {
+        // this.log( U.info( "Event: Click" ) )
+    } )
+
+    this.on( "blur", () => {
+        // this.log( U.info( "Event: Blur" ) )
+    } )
+
     this.on( "destroy", () => {
         this.state.get( "process" ).kill()
     } )
@@ -169,9 +198,11 @@ TFrame.prototype = Object.create( Log.prototype, {
      */
     prepareForRender: {
         value: function prepareForRender() {
+            // this.log( U.info( "PreRender" ) )
+
             // window size
             this.state.get( "isFullScreen" ) ? this.setFullSize() :
-                this.setLayoutSize()
+                this.setOriginalSize()
 
             // label
             const color =
@@ -183,6 +214,14 @@ TFrame.prototype = Object.create( Log.prototype, {
         },
     },
 
+    snapToBottom: {
+        value: function snapToBottom() {
+            this.height = this.parent.height
+            this.setFront()
+            this.setScrollPerc( 100 )
+        },
+    },
+
     setFullSize: {
         value: function setFullSize() {
             this.left = 0
@@ -190,17 +229,22 @@ TFrame.prototype = Object.create( Log.prototype, {
             this.width = this.parent.width
             this.height = this.parent.height
             this.setFront()
-            this.setScrollPerc( 100 )
         },
     },
 
-    setLayoutSize: {
-        value: function setLayoutSize() {
+    setOriginalSize: {
+        value: function setOriginalSize() {
             this.left = this.props.left
             this.top = this.props.top
             this.width = this.props.width
             this.height = this.props.height
-            this.setScrollPerc( 100 )
+        },
+    },
+
+    clearContent: {
+        value: function clearContent() {
+            this.setContent( "" )
+            this.log( U.info( "Famous Last Words: CLEAR" ) )
         },
     },
 
@@ -226,15 +270,6 @@ TFrame.prototype = Object.create( Log.prototype, {
 
                 // Pipe process to log
                 newProcess => {
-
-                    //
-                    this.state.set( {
-                        processCode  : null,
-                        processSignal: null,
-                    } )
-
-                    // Clear content before restart
-                    this.props.clear && this.setContent( "" )
 
                     // Configurable stderr printing
                     this.props.pipeError && ( () => {
