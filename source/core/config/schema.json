@@ -46,7 +46,14 @@
                             "default": false
                         },
                         "watch": {
-                            "type": "string"
+                            "oneOf": [ {
+                                    "type": "string"
+                                }, {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                } ]
                         },
                         "meta": {
                             "type": "array",

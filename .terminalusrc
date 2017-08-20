@@ -5,7 +5,7 @@
             "label": "ESLint",
             "cmd": "lint",
             "args": [ "--", "--color" ],
-            "watch":  "source/**/*.js",
+            "watch": "source/**/*.@(js|json)",
             "pipeError": true
         },
         "flow": {
@@ -19,11 +19,13 @@
             "cmd": "test",
             "args": [ "--", "--color" ],
             "clear": true,
+            "watch": "source/**/*.test.js",
             "meta": [ "status" ]
         },
         "babel": {
             "label": "Babel",
             "cmd": "build",
+            "watch": "source/**/*.@(js|json)",
             "args": [ "--", "--color" ]
         },
         "debug": {
