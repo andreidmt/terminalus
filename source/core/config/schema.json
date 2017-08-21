@@ -9,7 +9,7 @@
                 { "$ref": "#/definitions/LayoutRow" }
             ]
         },
-        "name": {
+        "title": {
             "type": "string"
         },
         "notify": {

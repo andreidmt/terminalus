@@ -38,6 +38,7 @@ const screen = new _blessed.Screen(_ramda2.default.merge({
  */
 screen.program.key(["C-c"], () => {
     screen.destroy();
+    process.exit(0);
 });
 
 /**

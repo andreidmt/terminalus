@@ -1,5 +1,5 @@
 {
-    "name"  : "npm terminal dashboard",
+    "title"  : "halt and catch fire",
     "frames": {
         "eslint": {
             "label": "ESLint",
@@ -35,7 +35,6 @@
             "clear": true
         }
     },
-
     "layout": {
         "td:70": {
             "tr:50": [ "tape", "flow" ],
@@ -43,5 +42,4 @@
         },
         "td": [ "debug", "babel" ]
     }
-
 }

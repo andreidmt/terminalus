@@ -26,6 +26,7 @@ const screen = new Screen( R.merge( {
  */
 screen.program.key( [ "C-c" ], () => {
     screen.destroy()
+    process.exit( 0 )
 } )
 
 /**
