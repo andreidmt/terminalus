@@ -40,6 +40,7 @@
     "chokidar": "1.7.0",
     "figures": "2.0.0",
     "immutable": "3.8.1",
+    "minimatch": "3.0.4",
     "node-notifier": "5.1.2",
     "ramda": "0.24.1",
     "rc": "1.2.1"
