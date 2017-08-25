@@ -40,7 +40,7 @@ export default function StateWithHistory( initialState = {}, opt ) {
         props.afterUpdate &&
             props.afterUpdate( stack[ 1 ], stack[ 0 ] )
     }, {
-        time    : 50,
+        time    : 30,
         lastCall: true,
     } )
 
