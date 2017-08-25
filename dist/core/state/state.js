@@ -7,11 +7,11 @@ exports.default = StateWithHistory;
 
 var _immutable = require("immutable");
 
-var _immutable2 = _interopRequireDefault(_immutable);
-
 var _ramda = require("ramda");
 
 var _ramda2 = _interopRequireDefault(_ramda);
+
+var _utils = require("../../core/utils");
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -28,13 +28,11 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
  *
  * @example const state = stateWithHistory({lorem: "ipsum"})
  */
-// const debug = require( "debug" )( "Terminalus:StateWithHistory" )
-
 function StateWithHistory(initialState = {}, opt) {
 
     // + unshift
     // - pop
-    const history = [new _immutable2.default.Map(initialState)];
+    const history = [new _immutable.Map(initialState)];
     const props = _ramda2.default.merge({
         maxLength: 2
     }, opt);
@@ -45,13 +43,16 @@ function StateWithHistory(initialState = {}, opt) {
      *
      * @return  {undefined}
      */
-    const afterUpdate = () => {
+    const afterUpdate = (0, _utils.throttle)(() => {
         // pop one out if history too big (unshift returns the new length)
         history.length > props.maxLength && history.pop();
 
         // trigger callback with prev & next versions
         props.afterUpdate && props.afterUpdate(history[1], history[0]);
-    };
+    }, {
+        time: 50,
+        lastCall: true
+    });
 
     return {
         /**
@@ -107,7 +108,7 @@ function StateWithHistory(initialState = {}, opt) {
          * @return {boolean}  True if has changed, False otherwise.
          */
         hasChanged(key) {
-            return history.length > 1 && !_immutable2.default.is(history[1].get(key), history[0].get(key));
+            return history.length > 1 && !(0, _immutable.is)(history[1].get(key), history[0].get(key));
         }
     };
-}
+} // const debug = require( "debug" )( "Terminalus:StateWithHistory" )

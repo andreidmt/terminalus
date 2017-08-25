@@ -1,7 +1,8 @@
 // const debug = require( "debug" )( "Terminalus:StateWithHistory" )
 
-import I from "immutable"
+import { Map, is } from "immutable"
 import R from "ramda"
+import { throttle } from "../../core/utils"
 
 /**
  * Object with get/set/delete/hasChanged, interfacing immutable map and keeping
@@ -20,7 +21,7 @@ export default function StateWithHistory( initialState = {}, opt ) {
 
     // + unshift
     // - pop
-    const history = [ new I.Map( initialState ) ]
+    const history = [ new Map( initialState ) ]
     const props = R.merge( {
         maxLength: 2,
     }, opt )
@@ -32,13 +33,17 @@ export default function StateWithHistory( initialState = {}, opt ) {
      *
      * @return  {undefined}
      */
-    const afterUpdate = () => {
+    const afterUpdate = throttle( () => {
         // pop one out if history too big (unshift returns the new length)
         history.length > props.maxLength && history.pop()
 
         // trigger callback with prev & next versions
-        props.afterUpdate && props.afterUpdate( history[ 1 ], history[ 0 ] )
-    }
+        props.afterUpdate &&
+            props.afterUpdate( history[ 1 ], history[ 0 ] )
+    }, {
+        time    : 50,
+        lastCall: true,
+    } )
 
     return {
         /**
@@ -95,7 +100,7 @@ export default function StateWithHistory( initialState = {}, opt ) {
          */
         hasChanged( key ) {
             return history.length > 1 &&
-                !I.is( history[ 1 ].get( key ), history[ 0 ].get( key ) )
+                !is( history[ 1 ].get( key ), history[ 0 ].get( key ) )
         },
     }
 }
