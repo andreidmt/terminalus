@@ -13,7 +13,7 @@
     "build": "rm -rf ./dist && babel source --out-dir dist"
   },
   "author": "Andrei Dumitrescu <andrei@codemachiner.com> (https://twitter.com/andreidcm)",
-  "license": "ISC",
+  "license": "BSD-3-Clause",
   "devDependencies": {
     "@codemachiner/eslint-config": "2.7.2",
     "babel-cli": "6.26.0",
@@ -30,6 +30,7 @@
     "eslint-watch": "3.1.2",
     "markdownlint-cli": "0.3.1",
     "npm-check": "5.4.5",
+    "nsp": "2.7.0",
     "tap-diff": "0.1.1",
     "tape": "4.8.0"
   },
