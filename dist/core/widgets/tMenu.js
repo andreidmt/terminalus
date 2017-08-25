@@ -92,6 +92,11 @@ const DEFAULT_MENU_PROPS = {
         // general handler
         props.onSelect();
     });
+
+    props.frame.on("resize", () => {
+        this.left = props.frame.left + 1;
+        this.top = props.frame.top + 1;
+    });
 }
 
 TMenu.prototype = Object.create(_blessed.List.prototype, {

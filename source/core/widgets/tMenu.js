@@ -86,6 +86,14 @@ export default function TMenu( props ) {
         // general handler
         props.onSelect()
     } )
+
+    /**
+     * Reposition menu when frame changes size
+     */
+    props.frame.on( "resize", () => {
+        this.left = props.frame.left + 1
+        this.top = props.frame.top + 1
+    } )
 }
 
 TMenu.prototype = Object.create( List.prototype, {

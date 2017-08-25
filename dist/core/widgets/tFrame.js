@@ -35,6 +35,8 @@ var _state2 = _interopRequireDefault(_state);
 
 var _tMenu = require("./tMenu");
 
+var _tMenu2 = _interopRequireDefault(_tMenu);
+
 function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
@@ -45,8 +47,6 @@ const DEFAULT_FRAME_PROPS = {
     scrollable: true,
     input: true,
     alwaysScroll: true,
-
-    // grabKeys    : true,
     scrollbar: {
         ch: " ",
         inverse: true
@@ -60,9 +60,7 @@ const DEFAULT_FRAME_PROPS = {
         left: 1,
         right: 1
     },
-    border: {
-        type: "line"
-    },
+    border: "line",
     style: {
         focus: {
             scrollbar: {
@@ -85,16 +83,16 @@ const DEFAULT_FRAME_PROPS = {
      *
      * @class   TFrame
      *
-     * @param   {Object}    props            Frame properties
-     * @param   {string}    props.label      Frame title
-     * @param   {string}    props.cmd        Process command
-     * @param   {string[]}  props.args       Command arguments
-     * @param   {string}    props.watch      Glob file patterns
-     * @param   {string[]}  props.meta       List of meta info handlers
-     * @param   {boolean}   props.clear      Clear frame content on process restart
-     * @param   {boolean}   props.pipeError  If should print process error stream
+     * @param {Object}    props  Frame properties
+     * @param {string}    props.label       Frame title
+     * @param {string}    props.cmd         Process command
+     * @param {string[]}  props.args        Command arguments
+     * @param {string}    props.watch       Glob file patterns
+     * @param {string[]}  props.meta        List of meta info handlers
+     * @param {boolean}   props.clear       Clear frame content on process restart
+     * @param {boolean}   props.showErrors  If should print process error stream
      *
-     * @return  {Object}    Visual element extended from Blessed Log
+     * @return  {Object}  Visual element extended from Blessed Log
      *
      * @example const eslintFrame = new Frame({ cmd: "npm", args: [ "run", "eslint"
      *          ] })
@@ -116,17 +114,22 @@ const DEFAULT_FRAME_PROPS = {
     /*
      * React'ish Props & State
      */
+    this.renderCount = 0;
     this.props = Object.freeze(props);
     this.state = (0, _state2.default)({
         process: null,
         processCode: null,
         processSignal: null,
+        data: new _immutable.List(),
+        showErrors: this.props.showErrors,
+        showLogs: false,
         isFullScreen: false,
         isMenuVisible: false,
-        watchMatch: this.props.watch ? new _minimatch.Minimatch(this.props.watch) : null
+        watchPattern: this.props.watch ? new _minimatch.Minimatch(this.props.watch) : null
     }, {
         afterUpdate: (prev, next) => {
             if (!(0, _immutable.is)(prev, next)) {
+                this.renderCount++;
                 this.prepareForRender();
                 this.parent.render();
             }
@@ -136,15 +139,19 @@ const DEFAULT_FRAME_PROPS = {
     /**
      * Options menu
      */
-    this.menu = new _tMenu.TMenu({
+    this.menu = new _tMenu2.default({
         items: [{
             label: "Clear content         Q",
             key: "q",
             handler: this.onKeyQ.bind(this)
         }, {
-            label: "History log           R",
+            label: "Toggle errors         E",
+            key: "e",
+            handler: this.onKeyE.bind(this)
+        }, {
+            label: "Toggle log            R",
             key: "r",
-            handler: this.onKeyF.bind(this)
+            handler: this.onKeyR.bind(this)
         }, {
             label: "Toggle fullscreen     F",
             key: "f",
@@ -167,15 +174,13 @@ const DEFAULT_FRAME_PROPS = {
         },
         parent: this.props.parent,
         frame: this,
-        top: this.atop + 1,
-        left: this.aleft + 2
+        top: `${this.props.top}+1`,
+        left: `${this.props.left}+1`
     });
 
     // Process will update the state on certain events, need the state to be
     // initialezed before running respawn
-    this.respawn({
-        notice: false
-    });
+    this.respawn();
 
     this.key("escape", this.onKeyEsc);
     this.key("enter", this.onKeyEnter);
@@ -183,23 +188,19 @@ const DEFAULT_FRAME_PROPS = {
     this.key("S-tab", this.onKeyShiftTab);
     this.key("q", this.onKeyQ);
     this.key("w", this.onKeyW);
+    this.key("e", this.onKeyE);
+    this.key("r", this.onKeyR);
     this.key("f", this.onKeyF);
 
     this.on("destroy", () => {
         this.state.get("process").kill();
     });
 
-    // this.on( "blur", () => {
-    //     this.state.set( {
-    //         isMenuVisible: false,
-    //     } )
-    // } )
-
     /**
      * If some file changed and it matches our pattern, respawn process
      */
-    this.props.watch && this.parent.on("watch", (path, event) => {
-        this.state.get("watchMatch").match(path) && this.respawn();
+    this.props.watch && this.parent.on("watch", path => {
+        this.state.get("watchPattern").match(path) && this.respawn();
     });
 }
 
@@ -216,7 +217,7 @@ TFrame.prototype = Object.create(_blessed.Log.prototype, {
      */
     onKeyQ: {
         value: function onKeyQ() {
-            this.clearContent();
+            this.clearAll();
         }
     },
 
@@ -227,6 +228,28 @@ TFrame.prototype = Object.create(_blessed.Log.prototype, {
         value: function onKeyW() {
             this.state.set({
                 isMenuVisible: !this.state.get("isMenuVisible")
+            });
+        }
+    },
+
+    /**
+     * Toggle error showing
+     */
+    onKeyE: {
+        value: function onKeyE() {
+            this.state.set({
+                showErrors: !this.state.get("showErrors")
+            });
+        }
+    },
+
+    /**
+     * Toggle logs showing
+     */
+    onKeyR: {
+        value: function onKeyR() {
+            this.state.set({
+                showLogs: !this.state.get("showLogs")
             });
         }
     },
@@ -299,6 +322,24 @@ TFrame.prototype = Object.create(_blessed.Log.prototype, {
     prepareForRender: {
         value: function prepareForRender() {
 
+            const shouldAdd = _ramda2.default.anyPass([
+            // is data
+            _ramda2.default.propEq("type", "stdout"),
+
+            // is error and should print error
+            _ramda2.default.both(_ramda2.default.propEq("type", "stderr"), () => _ramda2.default.equals(true, this.state.get("showErrors"))),
+
+            // is log and should print log
+            _ramda2.default.both(_ramda2.default.propEq("type", "log"), () => _ramda2.default.equals(true, this.state.get("showLogs")))]);
+
+            const concatData = _ramda2.default.reduce((acc, entry) => shouldAdd(entry) ? acc.concat(entry.type === "log" ? U.info(entry.content) : entry.content) : acc, "");
+
+            if (this.state.hasChanged("data", "showErrors", "showLogs")) {
+                this.setContent(concatData(this.state.get("data")));
+
+                // this.setScrollPerc( 100 )
+            }
+
             // window size
             if (this.state.get("isFullScreen")) {
                 this.left = 0;
@@ -326,14 +367,44 @@ TFrame.prototype = Object.create(_blessed.Log.prototype, {
             // label
             const color = this.state.get("processCode") === null ? _chalk2.default.blue : this.state.get("processCode") === 0 ? _chalk2.default.green : _chalk2.default.red;
 
-            this.setLabel(` ${color(_figures2.default.square)} ${this.props.label} `);
+            const showErrorsMeta = `${this.state.get("showErrors") ? _figures2.default.tick : _figures2.default.cross} stderr`;
+
+            const showLogsMeta = `${this.state.get("showLogs") ? _figures2.default.tick : _figures2.default.cross} logs`;
+
+            this.setLabel(` ${color(_figures2.default.square)} ${this.props.label}  - ${showErrorsMeta} | ${showLogsMeta} (${this.renderCount})`);
         }
     },
 
-    clearContent: {
-        value: function clearContent({ notice = true } = {}) {
-            this.setContent("");
-            notice && this.log(U.info("Famous Last Words: CLEAR"));
+    clearAll: {
+        value: function clearAll() {
+            this.state.set({
+                data: []
+            });
+
+            this.pushLog("Famous Last Words: CLEAR");
+        }
+    },
+
+    pushData: {
+        value: function pushData(data, type = "stdout") {
+            this.state.set({
+                data: this.state.get("data").push({
+                    type,
+                    content: data
+                })
+            });
+        }
+    },
+
+    pushError: {
+        value: function pushError(data) {
+            this.pushData(data.concat("\n"), "stderr");
+        }
+    },
+
+    pushLog: {
+        value: function pushLog(data) {
+            this.pushData(data.concat("\n"), "log");
         }
     },
 
@@ -343,11 +414,15 @@ TFrame.prototype = Object.create(_blessed.Log.prototype, {
      * @return {child_process$ChildProcess}  Newly spawned child process
      */
     respawn: {
-        value: function respawn({ notice = true } = {}) {
+        value: function respawn() {
             return _ramda2.default.pipe(
 
             // Kill old
-            child => child && child.kill(),
+            child => child && (() => {
+                child.kill();
+
+                this.pushLog(["Restarting", new Date()]);
+            })(),
 
             // Start new
             () => (0, _child_process.spawn)(this.props.cmd, this.props.args, {
@@ -358,11 +433,7 @@ TFrame.prototype = Object.create(_blessed.Log.prototype, {
             }),
 
             // Pipe process to screen
-            newProcess => {
-
-                this.props.clear && this.clearContent({ notice });
-
-                notice && this.log(U.info(["Restarting", new Date()].join("\n")));
+            child => {
 
                 this.state.set({
                     processCode: null,
@@ -370,32 +441,33 @@ TFrame.prototype = Object.create(_blessed.Log.prototype, {
                 });
 
                 // Configurable stderr printing
-                this.props.pipeError && (() => {
+                this.props.showErrors && (() => {
 
-                    const printErrorHeader = _ramda2.default.once(() => this.log(U.error(`${_figures2.default.warning} stderr`)));
+                    const printErrorHeader = _ramda2.default.once(() => this.pushLog(`${_figures2.default.warning} stderr`));
 
-                    newProcess.stderr.on("data", data => {
+                    child.stderr.on("data", data => {
                         printErrorHeader();
-                        this.log(data.toString());
+                        this.pushError(data.toString());
                     });
                 })();
 
                 // Main output
-                newProcess.stdout.on("data", data => {
-                    this.log(data.toString());
+                child.stdout.on("data", data => {
+                    this.pushData(data.toString());
                 });
 
                 // Bye Bye
-                Array("exit", "close").forEach(event => newProcess.on(event, (code, signal) => {
+                Array("exit", "close").forEach(event => child.on(event, (code, signal) => {
                     this.state.set({
                         processCode: code,
                         processSignal: signal
                     });
-                    this.log(U.info(`I died, ${event}: code ${code}, signal ${signal}`));
+
+                    this.pushLog(`I died, ${event}: code ${code}, signal ${signal}`);
                 }));
 
                 this.state.set({
-                    process: newProcess
+                    process: child
                 });
             })(this.state.get("process"));
         }
