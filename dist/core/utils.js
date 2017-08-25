@@ -1,7 +1,7 @@
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
-  value: true
+    value: true
 });
 const debug = require("debug")("Terminalus:Util");
 const chalk = require("chalk");
@@ -25,7 +25,7 @@ const success = exports.success = input => chalk.green([input, "------------"].j
  * @return  {string}  Underlined red text
  * @example console.log( error( "sad" ) )
  */
-const error = exports.error = input => chalk.red([input, "------------"].join("\n"));
+const error = exports.error = chalk.red;
 
 /**
  * Format info text
@@ -34,7 +34,7 @@ const error = exports.error = input => chalk.red([input, "------------"].join("\
  * @return  {string}  Underlined blue text
  * @example console.log( error( "meh" ) )
  */
-const info = exports.info = input => chalk.blue([input, "------------"].join("\n"));
+const info = exports.info = input => chalk.blue(`### ${input}`);
 
 /**
  * Format process.hrtime to show seconds & milliseconds or just
@@ -45,9 +45,9 @@ const info = exports.info = input => chalk.blue([input, "------------"].join("\n
  * @example { example }
  */
 const formatHRTime = exports.formatHRTime = hrtime => {
-  const ms = Math.round(hrtime[1] / 10000) / 100;
+    const ms = Math.round(hrtime[1] / 10000) / 100;
 
-  return hrtime[0] ? `${hrtime[0]}s ${ms}ms` : `${ms}ms`;
+    return hrtime[0] ? `${hrtime[0]}s ${ms}ms` : `${ms}ms`;
 };
 
 /**
@@ -80,7 +80,63 @@ const percent = exports.percent = (x, y, decimals = 2) => round(x / 100 * y, dec
  * @returns {string[]}
  */
 const protoChain = exports.protoChain = (obj, acc = []) => {
-  const proto = Object.getPrototypeOf(obj);
+    const proto = Object.getPrototypeOf(obj);
 
-  return proto ? protoChain(proto, [...acc, proto.constructor.name]) : acc;
+    return proto ? protoChain(proto, [...acc, proto.constructor.name]) : acc;
+};
+
+/**
+ * Call a function at `x` ms interval
+ *
+ * @param  {Function}  fn             Function to be ran
+ * @param  {Object}    arg2           Props
+ * @param  {number}    arg2.time      Time between each `fn` call
+ * @param  {boolean}   arg2.lastCall  Debounced
+ *
+ * @return {Function}  Throttled function
+ */
+const throttle = exports.throttle = (fn, { time = 50, lastCall = false }) => {
+
+    let lastExecution = new Date(new Date().getTime() - time);
+    let finalRunTimer;
+
+    return function throttleAnon(...args) {
+        const shouldCall = lastExecution.getTime() + time <= new Date().getTime();
+
+        if (shouldCall) {
+            lastExecution = new Date();
+
+            return fn.apply(this, args);
+        }
+
+        if (lastCall) {
+            clearTimeout(finalRunTimer);
+
+            finalRunTimer = setTimeout(() => {
+                lastExecution = new Date();
+                fn.apply(this, args);
+            }, time);
+        }
+    };
+};
+
+/**
+ * Call a function only if it hasn't been called in the last `x` ms.
+ *
+ * @param  {Function}  fn         The function to be called
+ * @param  {Object}    arg2       Props
+ * @param  {number}    arg2.time  Time that should pass without calling
+ *
+ * @return {Function}  Debounced function
+ */
+const debounce = exports.debounce = (fn, { time = 50 }) => {
+
+    let finalRunTimer;
+
+    return function debounceAnon(...args) {
+        clearTimeout(finalRunTimer);
+        finalRunTimer = setTimeout(() => {
+            fn.apply(this, args);
+        }, time);
+    };
 };

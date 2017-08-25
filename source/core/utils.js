@@ -21,8 +21,7 @@ export const success = input =>
  * @return  {string}  Underlined red text
  * @example console.log( error( "sad" ) )
  */
-export const error = input =>
-    chalk.red( [ input, "------------" ].join( "\n" ) )
+export const error = chalk.red
 
 /**
  * Format info text
@@ -32,7 +31,7 @@ export const error = input =>
  * @example console.log( error( "meh" ) )
  */
 export const info = input =>
-    chalk.blue( [ input, "------------" ].join( "\n" ) )
+    chalk.blue( `### ${input}` )
 
 /**
  * Format process.hrtime to show seconds & milliseconds or just
@@ -83,4 +82,60 @@ export const protoChain = ( obj, acc = [] ) => {
     const proto = Object.getPrototypeOf( obj )
 
     return proto ? protoChain( proto, [ ...acc, proto.constructor.name ] ) : acc
+}
+
+/**
+ * Call a function at `x` ms interval
+ *
+ * @param  {Function}  fn             Function to be ran
+ * @param  {Object}    arg2           Props
+ * @param  {number}    arg2.time      Time between each `fn` call
+ * @param  {boolean}   arg2.lastCall  Debounced
+ *
+ * @return {Function}  Throttled function
+ */
+export const throttle = ( fn, { time = 50, lastCall = false } ) => {
+
+    let lastExecution = new Date( ( new Date() ).getTime() - time )
+    let finalRunTimer
+
+    return function throttleAnon( ...args ) {
+        const shouldCall = ( lastExecution.getTime() + time ) <= ( new Date() ).getTime()
+
+        if ( shouldCall ) {
+            lastExecution = new Date()
+
+            return fn.apply( this, args )
+        }
+
+        if ( lastCall ) {
+            clearTimeout( finalRunTimer )
+
+            finalRunTimer = setTimeout( () => {
+                lastExecution = new Date()
+                fn.apply( this, args )
+            }, time )
+        }
+    }
+}
+
+/**
+ * Call a function only if it hasn't been called in the last `x` ms.
+ *
+ * @param  {Function}  fn         The function to be called
+ * @param  {Object}    arg2       Props
+ * @param  {number}    arg2.time  Time that should pass without calling
+ *
+ * @return {Function}  Debounced function
+ */
+export const debounce = ( fn, { time = 50 } ) => {
+
+    let finalRunTimer
+
+    return function debounceAnon( ...args ) {
+        clearTimeout( finalRunTimer )
+        finalRunTimer = setTimeout( () => {
+            fn.apply( this, args )
+        }, time )
+    }
 }
