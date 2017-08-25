@@ -13,9 +13,9 @@ const DEFAULT_MENU_PROPS = {
     align       : "left",
     alwaysScroll: true,
     border      : "line",
+    hidden      : true,
     style       : {
-        invisible: true,
-        selected : {
+        selected: {
             bg: "blue",
         },
         focus: {
