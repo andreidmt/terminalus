@@ -37,13 +37,9 @@
                                 "type": "string"
                             }
                         },
-                        "pipeError": {
+                        "showErrors": {
                             "type": "boolean",
                             "default": true
-                        },
-                        "clear": {
-                            "type": "boolean",
-                            "default": false
                         },
                         "watch": {
                             "oneOf": [ {

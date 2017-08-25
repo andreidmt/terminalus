@@ -6,19 +6,17 @@
             "cmd": "lint",
             "args": [ "--", "--color" ],
             "watch": "source/**/*.@(js|json)",
-            "pipeError": true
+            "showErrors": true
         },
         "flow": {
             "label": "Flow",
             "cmd": "flow",
-            "args": [ "--", "--color=always" ],
-            "clear": true
+            "args": [ "--", "--color=always" ]
         },
         "tape": {
             "label": "Tape",
             "cmd": "test",
             "args": [ "--", "--color" ],
-            "clear": true,
             "watch": "source/**/*.test.js",
             "meta": [ "status" ]
         },
@@ -31,8 +29,7 @@
         "debug": {
             "label": "Node inspect",
             "cmd": "node",
-            "args": [ "--inspect-brk", "source/test.js" ],
-            "clear": true
+            "args": [ "--inspect-brk", "source/test.js" ]
         }
     },
     "layout": {
