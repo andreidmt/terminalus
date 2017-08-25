@@ -93,6 +93,9 @@ const DEFAULT_MENU_PROPS = {
         props.onSelect();
     });
 
+    /**
+     * Reposition menu when frame changes size
+     */
     props.frame.on("resize", () => {
         this.left = props.frame.left + 1;
         this.top = props.frame.top + 1;

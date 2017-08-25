@@ -48,7 +48,7 @@ function StateWithHistory(initialState = {}, opt) {
         // trigger callback with prev & next versions
         props.afterUpdate && props.afterUpdate(stack[1], stack[0]);
     }, {
-        time: 50,
+        time: 30,
         lastCall: true
     });
 
