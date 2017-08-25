@@ -1,17 +1,17 @@
-// const debug = require( "debug" )( "Terminalus:StateWithHistory" )
+const debug = require( "debug" )( "Terminalus:StateWithHistory" )
 
 import { Map, is } from "immutable"
-import R from "ramda"
+import { merge } from "ramda"
 import { throttle } from "../../core/utils"
 
 /**
  * Object with get/set/delete/hasChanged, interfacing immutable map and keeping
  * history
  *
- * @param   {Object}    initialState
- * @param   {Object}    opt
- * @param   {number}    opt.maxLength     How many changes should be remembered
- * @param   {Function}  opt.afterUpdate   Callback after running set/delete
+ * @param {Object}    initialState     The initial state
+ * @param {Object}    opt              The option
+ * @param {number}    opt.maxLength    How many changes should be remembered
+ * @param {Function}  opt.afterUpdate  Callback after running set/delete
  *
  * @return  {Object}  Object with get/set/changed, interfacing immutable map
  *
@@ -21,11 +21,10 @@ export default function StateWithHistory( initialState = {}, opt ) {
 
     // + unshift
     // - pop
-    const history = [ new Map( initialState ) ]
-    const props = R.merge( {
+    const stack = [ new Map( initialState ) ]
+    const props = merge( {
         maxLength: 2,
     }, opt )
-
 
     /**
      * Helper function for house cleaning after and update operation
@@ -35,11 +34,11 @@ export default function StateWithHistory( initialState = {}, opt ) {
      */
     const afterUpdate = throttle( () => {
         // pop one out if history too big (unshift returns the new length)
-        history.length > props.maxLength && history.pop()
+        stack.length > props.maxLength && stack.pop()
 
         // trigger callback with prev & next versions
         props.afterUpdate &&
-            props.afterUpdate( history[ 1 ], history[ 0 ] )
+            props.afterUpdate( stack[ 1 ], stack[ 0 ] )
     }, {
         time    : 50,
         lastCall: true,
@@ -54,7 +53,7 @@ export default function StateWithHistory( initialState = {}, opt ) {
          * @return {*}  undefined if key not defined of watever value
          */
         get( key ) {
-            return history[ 0 ].get( key )
+            return stack[ 0 ].get( key )
         },
 
         /**
@@ -67,7 +66,7 @@ export default function StateWithHistory( initialState = {}, opt ) {
         set( data ) {
 
             // add at the begining new map obj with data merged
-            history.unshift( history[ 0 ].merge( data ) )
+            stack.unshift( stack[ 0 ].merge( data ) )
 
             // check history length & run user callback
             afterUpdate()
@@ -83,7 +82,7 @@ export default function StateWithHistory( initialState = {}, opt ) {
         delete( key ) {
 
             // add at the begining new map whithout key
-            history.unshift( history[ 0 ].delete( key ) )
+            stack.unshift( stack[ 0 ].delete( key ) )
 
             // check history length & run user callback
             afterUpdate()
@@ -94,13 +93,16 @@ export default function StateWithHistory( initialState = {}, opt ) {
         /**
          * Check if value under key has changed
          *
-         * @param  {string}   key  The key
+         * @param  {string}   ...keys
          *
          * @return {boolean}  True if has changed, False otherwise.
          */
-        hasChanged( key ) {
-            return history.length > 1 &&
-                !is( history[ 1 ].get( key ), history[ 0 ].get( key ) )
+        hasChanged( ...keys ) {
+            return keys.reduce( ( acc, key ) =>
+                ( stack.length > 1 &&
+                    !is( stack[ 1 ].get( key ), stack[ 0 ].get( key ) ) ) ||
+                        acc,
+            false )
         },
     }
 }

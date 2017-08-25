@@ -11,6 +11,7 @@ test( "Immutable Map with history", assert => {
 
     const testMap = mapWithHistory( {
         single : "leave me alone",
+        single2: "leave me alone too",
         update : "paarty",
         boolean: true,
     } )
@@ -49,6 +50,12 @@ test( "Immutable Map with history", assert => {
 
     assert.equal( true, testMap.hasChanged( "new" ),
         ".hasChanged - New prop (expect true)" )
+
+    assert.equal( true, testMap.hasChanged( "new", "single" ),
+        ".hasChanged - Multiple properties check - one changed, one not (expect true)" )
+
+    assert.equal( false, testMap.hasChanged( "single", "single2" ),
+        ".hasChanged - Multiple properties check - none changed (expect false)" )
 
     testMap.set( {
         new: "im blue",

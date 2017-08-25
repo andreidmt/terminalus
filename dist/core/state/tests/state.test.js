@@ -20,6 +20,7 @@ _tape2.default.createStream().pipe((0, _tapDiff2.default)()).pipe(process.stdout
 
     const testMap = (0, _state2.default)({
         single: "leave me alone",
+        single2: "leave me alone too",
         update: "paarty",
         boolean: true
     });
@@ -49,6 +50,10 @@ _tape2.default.createStream().pipe((0, _tapDiff2.default)()).pipe(process.stdout
     assert.equal(true, testMap.hasChanged("update"), ".hasChanged - Updated prop (expect true)");
 
     assert.equal(true, testMap.hasChanged("new"), ".hasChanged - New prop (expect true)");
+
+    assert.equal(true, testMap.hasChanged("new", "single"), ".hasChanged - Multiple properties check - one changed, one not (expect true)");
+
+    assert.equal(false, testMap.hasChanged("single", "single2"), ".hasChanged - Multiple properties check - none changed (expect false)");
 
     testMap.set({
         new: "im blue"
