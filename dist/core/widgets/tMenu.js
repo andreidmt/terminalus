@@ -3,7 +3,7 @@
 Object.defineProperty(exports, "__esModule", {
     value: true
 });
-exports.TMenu = TMenu;
+exports.default = TMenu;
 
 var _blessed = require("blessed");
 
@@ -24,10 +24,9 @@ const DEFAULT_MENU_PROPS = {
     mouse: true,
     align: "left",
     alwaysScroll: true,
-    border: {
-        type: "line"
-    },
+    border: "line",
     style: {
+        invisible: true,
         selected: {
             bg: "blue"
         },

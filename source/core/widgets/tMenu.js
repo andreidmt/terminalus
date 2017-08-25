@@ -1,6 +1,6 @@
 const debug = require( "debug" )( "Terminalus:Menu" )
 
-import { ListTable, List } from "blessed"
+import { List } from "blessed"
 import R from "ramda"
 
 // import chalk from "chalk"
@@ -12,11 +12,10 @@ const DEFAULT_MENU_PROPS = {
     mouse       : true,
     align       : "left",
     alwaysScroll: true,
-    border      : {
-        type: "line",
-    },
-    style: {
-        selected: {
+    border      : "line",
+    style       : {
+        invisible: true,
+        selected : {
             bg: "blue",
         },
         focus: {
@@ -39,7 +38,7 @@ const DEFAULT_MENU_PROPS = {
  *
  * @return {TMenu}   { description_of_the_return_value }
  */
-export function TMenu( props ) {
+export default function TMenu( props ) {
 
     /*
      * Guard against calls without new
@@ -75,7 +74,6 @@ export function TMenu( props ) {
         this.addItem( ` ${item.label} ` )
         this.key( item.key, item.handler )
     }, props.items )
-
 
     /**
      * Enter pressed on item
