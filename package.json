@@ -44,6 +44,7 @@
     "minimatch": "3.0.4",
     "node-notifier": "5.1.2",
     "ramda": "0.24.1",
-    "rc": "1.2.1"
+    "rc": "1.2.1",
+    "seamless-immutable": "7.1.2"
   }
 }
