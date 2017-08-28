@@ -94,8 +94,8 @@ export function TFrame( props ) {
     this.props = Object.freeze( props )
     this.state = stateWithHistory( {
         process      : null,
-        processCode  : null,
-        processSignal: null,
+        childCode    : null,
+        childSignal  : null,
         data         : new List(),
         showErrors   : this.props.showErrors,
         showLogs     : false,
@@ -354,8 +354,8 @@ TFrame.prototype = Object.create( Log.prototype, {
 
             // label
             const color =
-                this.state.get( "processCode" ) === null ? chalk.blue :
-                    this.state.get( "processCode" ) === 0 ? chalk.green :
+                this.state.get( "childCode" ) === null ? chalk.blue :
+                    this.state.get( "childCode" ) === 0 ? chalk.green :
                         chalk.red
 
             const showErrorsMeta = `${this.state.get( "showErrors" ) ? unicode.tick : unicode.cross} stderr`
@@ -408,45 +408,43 @@ TFrame.prototype = Object.create( Log.prototype, {
         value: function respawn() {
             return R.pipe(
 
-                // Kill old
-                child => child && ( () => {
-                    child.kill()
+                // Kill old & start new
+                child => {
 
-                    this.pushLog( [ "Restarting", new Date() ] )
-                } )(),
+                    if ( child ) {
+                        child.kill()
+                        this.pushLog( [ "Restarting", new Date() ] )
+                    }
 
-                // Start new
-                () => spawn( this.props.cmd, this.props.args, {
-                    cwd      : process.cwd(),
-                    env      : process.env,
-                    detatched: false,
-                    encoding : "utf8",
-                } ),
+                    this.state.set( {
+                        childCode   : null,
+                        childSignal : null,
+                        childStartAt: process.hrtime(),
+                    } )
+
+                    return spawn( this.props.cmd, this.props.args, {
+                        cwd      : process.cwd(),
+                        env      : process.env,
+                        detatched: false,
+                        encoding : "utf8",
+                    } )},
 
                 // Pipe process to screen
                 child => {
 
-                    this.state.set( {
-                        processCode  : null,
-                        processSignal: null,
-                    } )
-
-                    // Configurable stderr printing
-                    this.props.showErrors && ( () => {
-
-                        const printErrorHeader = R.once(
-                            () => this.pushLog( `${unicode.warning } stderr` )
-                        )
-
-                        child.stderr.on( "data", data => {
-                            printErrorHeader()
-                            this.pushError( data.toString() )
-                        } )
-                    } )()
-
                     // Main output
                     child.stdout.on( "data", data => {
                         this.pushData( data.toString() )
+                    } )
+
+                    const printErrorHeader = R.once(
+                        () => this.pushLog( `${unicode.warning } stderr` )
+                    )
+
+                    // Error output
+                    child.stderr.on( "data", data => {
+                        printErrorHeader()
+                        this.pushError( data.toString() )
                     } )
 
                     // Bye Bye
@@ -454,8 +452,10 @@ TFrame.prototype = Object.create( Log.prototype, {
                         .forEach( event =>
                             child.on( event, ( code, signal ) => {
                                 this.state.set( {
-                                    processCode  : code,
-                                    processSignal: signal,
+                                    childCode  : code,
+                                    childSignal: signal,
+                                    childEndAt : process.hrtime(
+                                        this.state.get( "childStartAt" ) ),
                                 } )
 
                                 this.pushLog( `I died, ${event}: code ${code}, signal ${signal}` )

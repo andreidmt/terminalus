@@ -118,8 +118,8 @@ const DEFAULT_FRAME_PROPS = {
     this.props = Object.freeze(props);
     this.state = (0, _state2.default)({
         process: null,
-        processCode: null,
-        processSignal: null,
+        childCode: null,
+        childSignal: null,
         data: new _immutable.List(),
         showErrors: this.props.showErrors,
         showLogs: false,
@@ -365,7 +365,7 @@ TFrame.prototype = Object.create(_blessed.Log.prototype, {
             }
 
             // label
-            const color = this.state.get("processCode") === null ? _chalk2.default.blue : this.state.get("processCode") === 0 ? _chalk2.default.green : _chalk2.default.red;
+            const color = this.state.get("childCode") === null ? _chalk2.default.blue : this.state.get("childCode") === 0 ? _chalk2.default.green : _chalk2.default.red;
 
             const showErrorsMeta = `${this.state.get("showErrors") ? _figures2.default.tick : _figures2.default.cross} stderr`;
 
@@ -417,50 +417,50 @@ TFrame.prototype = Object.create(_blessed.Log.prototype, {
         value: function respawn() {
             return _ramda2.default.pipe(
 
-            // Kill old
-            child => child && (() => {
-                child.kill();
+            // Kill old & start new
+            child => {
 
-                this.pushLog(["Restarting", new Date()]);
-            })(),
+                if (child) {
+                    child.kill();
+                    this.pushLog(["Restarting", new Date()]);
+                }
 
-            // Start new
-            () => (0, _child_process.spawn)(this.props.cmd, this.props.args, {
-                cwd: process.cwd(),
-                env: process.env,
-                detatched: false,
-                encoding: "utf8"
-            }),
+                this.state.set({
+                    childCode: null,
+                    childSignal: null,
+                    childStartAt: process.hrtime()
+                });
+
+                return (0, _child_process.spawn)(this.props.cmd, this.props.args, {
+                    cwd: process.cwd(),
+                    env: process.env,
+                    detatched: false,
+                    encoding: "utf8"
+                });
+            },
 
             // Pipe process to screen
             child => {
-
-                this.state.set({
-                    processCode: null,
-                    processSignal: null
-                });
-
-                // Configurable stderr printing
-                this.props.showErrors && (() => {
-
-                    const printErrorHeader = _ramda2.default.once(() => this.pushLog(`${_figures2.default.warning} stderr`));
-
-                    child.stderr.on("data", data => {
-                        printErrorHeader();
-                        this.pushError(data.toString());
-                    });
-                })();
 
                 // Main output
                 child.stdout.on("data", data => {
                     this.pushData(data.toString());
                 });
 
+                const printErrorHeader = _ramda2.default.once(() => this.pushLog(`${_figures2.default.warning} stderr`));
+
+                // Error output
+                child.stderr.on("data", data => {
+                    printErrorHeader();
+                    this.pushError(data.toString());
+                });
+
                 // Bye Bye
                 Array("exit", "close").forEach(event => child.on(event, (code, signal) => {
                     this.state.set({
-                        processCode: code,
-                        processSignal: signal
+                        childCode: code,
+                        childSignal: signal,
+                        childEndAt: process.hrtime(this.state.get("childStartAt"))
                     });
 
                     this.pushLog(`I died, ${event}: code ${code}, signal ${signal}`);
