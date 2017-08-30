@@ -77,7 +77,7 @@ function stateHistoryFactory(state = {}, opt) {
         /**
          * Set new value with history
          *
-         * @param {Object}    data      Merge with latest saved values
+         * @param {Object}  data  Merge with latest saved values
          *
          * @return {Object}  stateHistoryFactory
          */
@@ -97,9 +97,9 @@ function stateHistoryFactory(state = {}, opt) {
         /**
          * Check if value under key has changed
          *
-         * @param  {string[]}   keys  The keys
+         * @param  {string[]}  keys  The keys
          *
-         * @return {boolean}  True if has changed, False otherwise.
+         * @return {boolean}   True if has changed, False otherwise.
          */
         hasChanged(...keys) {
             return keys.reduce((acc, key) => stack.length > 1 && !(0, _immutable.is)(stack[1].get(key), stack[0].get(key)) || acc, false);
