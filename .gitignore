@@ -68,3 +68,4 @@ typings/
 # App
 flow-typed/
 todo
+_*.js
