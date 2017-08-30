@@ -3,6 +3,9 @@
   "version": "0.0.2",
   "description": "Terminal dashboard for npm",
   "main": "dist/index.js",
+  "bin": {
+    "terminalus": "bin/terminalus.js"
+  },
   "scripts": {
     "update": "npm-check -u",
     "setup": "rm -f package-lock.json && rm -rf ./node_modules && npm i",
