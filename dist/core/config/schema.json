@@ -1,0 +1,112 @@
+{
+    "type"    : "object",
+    "required": [ "frames", "layout" ],
+
+    "properties": {
+        "layout": {
+            "oneOf": [
+                { "$ref": "#/definitions/LayoutColumn" },
+                { "$ref": "#/definitions/LayoutRow" }
+            ]
+        },
+        "title": {
+            "type": "string"
+        },
+        "notify": {
+            "type": "boolean",
+            "default": true
+        },
+        "frames": {
+            "type": "object",
+            "additionalProperties": false,
+            "patternProperties": {
+                "^[a-z]+$": {
+                    "type": "object",
+                    "required": [ "cmd" ],
+                    "additionalProperties": false,
+                    "properties": {
+                        "label": {
+                            "type": "string"
+                        },
+                        "cmd": {
+                            "type": "string"
+                        },
+                        "args": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        },
+                        "showErrors": {
+                            "type": "boolean",
+                            "default": false
+                        },
+                        "showLogs": {
+                            "type": "boolean",
+                            "default": false
+                        },
+                        "clearOnRestart": {
+                            "type": "boolean",
+                            "default": true
+                        },
+                        "watch": {
+                            "oneOf": [ {
+                                    "type": "string"
+                                }, {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                } ]
+                        },
+                        "meta": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            },
+                            "default": []
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "LayoutColumn": {
+            "type": "object",
+            "minProperties": 1,
+            "additionalProperties": false,
+            "patternProperties": {
+                "^td(:[0-9]+)?$": {
+                    "oneOf": [
+                        { "$ref": "#/definitions/LayoutColumn" },
+                        { "$ref": "#/definitions/LayoutRow" },
+                        { "$ref": "#/definitions/LayoutFrame" }
+                    ]
+                }
+            }
+        },
+        "LayoutRow": {
+            "type": "object",
+            "minProperties": 1,
+            "additionalProperties": false,
+            "patternProperties": {
+                "^tr(:[0-9]+)?$": {
+                    "oneOf": [
+                        { "$ref": "#/definitions/LayoutColumn" },
+                        { "$ref": "#/definitions/LayoutRow" },
+                        { "$ref": "#/definitions/LayoutFrame" }
+                    ]
+                }
+            }
+        },
+        "LayoutFrame": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+                "type": "string",
+                "pattern": "^[a-z]+(:[0-9]+)?$"
+            }
+        }
+    }
+}

@@ -10,7 +10,7 @@
     "lint": "eslint source/",
     "lint:fix": "eslint_d --color --fix source/",
     "test": "tape -r babel-register source/**/*.test.js",
-    "build": "rm -rf ./dist && babel source --out-dir dist"
+    "build": "rm -rf ./dist && babel source --out-dir dist --copy-files"
   },
   "author": "Andrei Dumitrescu <andrei@codemachiner.com> (https://twitter.com/andreidcm)",
   "license": "BSD-3-Clause",
