@@ -3,14 +3,14 @@ const debug = require( "debug" )( "Terminalus" )
 import { getConfig } from "./core/config/config"
 import { TFrame } from "./core/widgets/tFrame"
 import { Screen } from "blessed"
-import R from "ramda"
-import chokidar from "chokidar"
+import { map, merge } from "ramda"
+import { watch } from "chokidar"
 
 /**
  * Init config & screen
  */
 const config = getConfig()
-const screen = new Screen( R.merge( {
+const screen = new Screen( merge( {
     tabSize     : 4,
     smartCSR    : true,
     fullUnicode : true,
@@ -21,9 +21,6 @@ const screen = new Screen( R.merge( {
     title: config.title,
 } ) )
 
-/**
- * Keyboard shortcuts
- */
 screen.program.key( [ "C-c" ], () => {
     screen.destroy()
     process.exit( 0 )
@@ -32,23 +29,22 @@ screen.program.key( [ "C-c" ], () => {
 /**
  * Crate frame widgets
  */
-R.map( frameProps =>
-    new TFrame(
-        R.merge( frameProps, {
-            parent: screen,
-        } )
-    )
+map( frameProps =>
+    new TFrame( merge( frameProps, {
+        parent: screen,
+    } ) )
 )( config.frames )
 
-// Focus first one
 screen.children[ 0 ].emit( "focus" )
 
 /**
- *  Watch patterns from all frames. Screen will emit event on file change
- *  and each frame (with watch defined) will match the file path with it's
- *  pattern ... if it matches then respawn the process
+ *  Watch for file changes based on the combined patterns of all frames.
+ *
+ *  Screen will emit a `watch` event on file change event and each frame (that
+ *  defined a `watch` pattern) will listen and respawn the process if it's
+ *  pattern matches
  */
-config.watch && chokidar.watch( config.watch, {
+config.watch && watch( config.watch, {
     cwd          : process.cwd(),
     ignore       : config.ignore,
     ignoreInitial: true,
