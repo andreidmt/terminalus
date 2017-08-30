@@ -45,6 +45,7 @@
     "node-notifier": "5.1.2",
     "ramda": "0.24.1",
     "rc": "1.2.1",
+    "redux": "3.7.2",
     "seamless-immutable": "7.1.2"
   }
 }
