@@ -5,8 +5,7 @@
             "label": "ESLint",
             "cmd": "lint",
             "args": [ "--", "--color" ],
-            "watch": "source/**/*.@(js|json)",
-            "showErrors": true
+            "watch": "source/**/*.@(js|json)"
         },
         "flow": {
             "label": "Flow",
@@ -17,8 +16,7 @@
             "label": "Tape",
             "cmd": "test",
             "args": [ "--", "--color" ],
-            "watch": "source/**/*.test.js",
-            "meta": [ "status" ]
+            "watch": "source/**/*.test.js"
         },
         "babel": {
             "label": "Babel",
