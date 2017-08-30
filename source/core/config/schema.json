@@ -39,6 +39,14 @@
                         },
                         "showErrors": {
                             "type": "boolean",
+                            "default": false
+                        },
+                        "showLogs": {
+                            "type": "boolean",
+                            "default": false
+                        },
+                        "clearOnRestart": {
+                            "type": "boolean",
                             "default": true
                         },
                         "watch": {

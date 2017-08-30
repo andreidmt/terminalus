@@ -5,11 +5,11 @@ import { spawn } from "child_process"
 import R from "ramda"
 import chalk from "chalk"
 import unicode from "figures"
-import { is, List } from "immutable"
+import { List } from "immutable"
 import { Minimatch } from "minimatch"
 
 import * as U from "../utils"
-import stateWithHistory from "../state/state"
+import stateHistoryFactory from "../state/state"
 import TMenu from "./tMenu"
 
 const DEFAULT_FRAME_PROPS = {
@@ -92,23 +92,23 @@ export function TFrame( props ) {
      */
     this.renderCount = 0
     this.props = Object.freeze( props )
-    this.state = stateWithHistory( {
-        process      : null,
-        childCode    : null,
-        childSignal  : null,
-        data         : new List(),
-        showErrors   : this.props.showErrors,
-        showLogs     : false,
-        isFullScreen : false,
-        isMenuVisible: false,
-        watchPattern : this.props.watch ? new Minimatch( this.props.watch ) : null,
+    this.state = stateHistoryFactory( {
+        process       : null,
+        childCode     : null,
+        childSignal   : null,
+        data          : new List(),
+        showErrors    : this.props.showErrors,
+        showLogs      : this.props.showLogs,
+        clearOnRestart: this.props.clearOnRestart,
+        isFullScreen  : false,
+        isMenuVisible : false,
+        watchPattern  : this.props.watch ? new Minimatch( this.props.watch ) : null,
     }, {
-        afterUpdate: ( prev, next ) => {
-            if ( !is( prev, next ) ) {
-                this.renderCount++
-                this.prepareForRender()
-                this.parent.render()
-            }
+        pure       : true,
+        afterUpdate: () => {
+            this.renderCount++
+            this.prepareForRender()
+            this.parent.render()
         },
     } )
 
@@ -237,7 +237,6 @@ TFrame.prototype = Object.create( Log.prototype, {
      */
     onKeyF: {
         value: function onKeyF() {
-            this.log( U.info( "Key: F (fullscreen toggle)" ) )
             this.state.set( {
                 isFullScreen : !this.state.get( "isFullScreen" ),
                 isMenuVisible: false,
@@ -324,8 +323,6 @@ TFrame.prototype = Object.create( Log.prototype, {
 
             if ( this.state.hasChanged( "data", "showErrors", "showLogs" ) ) {
                 this.setContent( concatData( this.state.get( "data" ) ) )
-
-                // this.setScrollPerc( 100 )
             }
 
             // window size
@@ -358,11 +355,11 @@ TFrame.prototype = Object.create( Log.prototype, {
                     this.state.get( "childCode" ) === 0 ? chalk.green :
                         chalk.red
 
-            const showErrorsMeta = `${this.state.get( "showErrors" ) ? unicode.tick : unicode.cross} stderr`
+            // const showErrorsMeta = `${this.state.get( "showErrors" ) ? unicode.tick : unicode.cross} stderr`
 
-            const showLogsMeta = `${this.state.get( "showLogs" ) ? unicode.tick : unicode.cross} logs`
+            // const showLogsMeta = `${this.state.get( "showLogs" ) ? unicode.tick : unicode.cross} logs`
 
-            this.setLabel( ` ${ color( unicode.square ) } ${ this.props.label }  - ${showErrorsMeta} | ${showLogsMeta} (${this.renderCount})` )
+            this.setLabel( ` ${ color( unicode.square ) } ${ this.props.label }(${this.renderCount})` )
         },
     },
 
@@ -422,6 +419,10 @@ TFrame.prototype = Object.create( Log.prototype, {
                         childStartAt: process.hrtime(),
                     } )
 
+                    this.state.get( "clearOnRestart" ) && this.clearAll()
+
+                    this.emit( "child.start", this.state )
+
                     return spawn( this.props.cmd, this.props.args, {
                         cwd      : process.cwd(),
                         env      : process.env,
@@ -447,20 +448,18 @@ TFrame.prototype = Object.create( Log.prototype, {
                         this.pushError( data.toString() )
                     } )
 
-                    // Bye Bye
-                    Array( "exit", "close" )
-                        .forEach( event =>
-                            child.on( event, ( code, signal ) => {
-                                this.state.set( {
-                                    childCode  : code,
-                                    childSignal: signal,
-                                    childEndAt : process.hrtime(
-                                        this.state.get( "childStartAt" ) ),
-                                } )
+                    child.on( "exit", ( code, signal ) => {
+                        this.state.set( {
+                            childCode  : code,
+                            childSignal: signal,
+                            childEndAt : process.hrtime(
+                                this.state.get( "childStartAt" ).toArray() ),
+                        } )
 
-                                this.pushLog( `I died, ${event}: code ${code}, signal ${signal}` )
-                            } )
-                        )
+                        this.emit( "child.end", this.state )
+
+                        this.pushLog( `I died, code ${code}, signal ${signal}` )
+                    } )
 
                     this.state.set( {
                         process: child,

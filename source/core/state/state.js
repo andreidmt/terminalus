@@ -1,44 +1,53 @@
-const debug = require( "debug" )( "Terminalus:StateWithHistory" )
+const debug = require( "debug" )( "Terminalus:stateHistoryFactory" )
 
 import { Map, is } from "immutable"
 import { merge } from "ramda"
 import { throttle } from "../../core/utils"
 
 /**
- * Object with get/set/delete/hasChanged, interfacing immutable map and keeping
+ * Object with get/set/hasChanged, interfacing immutable map and keeping
  * history
  *
- * @param {Object}    initialState     The initial state
- * @param {Object}    opt              The option
- * @param {number}    opt.maxLength    How many changes should be remembered
- * @param {Function}  opt.afterUpdate  Callback after running set/delete
+ * @class   stateHistoryFactory
  *
- * @return  {Object}  Object with get/set/changed, interfacing immutable map
+ * @param   {Object}    state            The initial state
+ * @param   {Object}    opt              State options
+ * @param   {number}    opt.maxLength    How many changes should be remembered
+ * @param   {number}    opt.pure         Run afterUpdate only if prev & next
+ *                                       are different
+ * @param   {Function}  opt.afterUpdate  Callback after running set
  *
- * @example const state = stateWithHistory({lorem: "ipsum"})
+ * @return  {Object}  Object interfacing immutable map
+ *
+ * @example
+ * const state = stateHistoryFactory( {
+ *     lorem: "ipsum"
+ * }, {
+ *     maxLength: 2,
+ *     afterUpdate: (prevState, nextState) => {
+ *         console.log( nextState.get("lorem") )
+ *     }
+ * } )
  */
-export default function StateWithHistory( initialState = {}, opt ) {
+export default function stateHistoryFactory( state = {}, opt ) {
 
     // + unshift
     // - pop
-    const stack = [ new Map( initialState ) ]
+    const stack = [ new Map( state ) ]
     const props = merge( {
         maxLength: 2,
     }, opt )
 
     /**
-     * Helper function for house cleaning after and update operation
-     * (set/delete) was ran
+     * Run update once every 30ms
      *
-     * @return  {undefined}
+     * @type {Function}
      */
-    const afterUpdate = throttle( () => {
-        // pop one out if history too big (unshift returns the new length)
-        stack.length > props.maxLength && stack.pop()
-
+    const throttledAfterUpdate = throttle( () => {
         // trigger callback with prev & next versions
-        props.afterUpdate &&
+        if ( !is( stack[ 1 ], stack[ 0 ] ) ) {
             props.afterUpdate( stack[ 1 ], stack[ 0 ] )
+        }
     }, {
         time    : 30,
         lastCall: true,
@@ -50,7 +59,7 @@ export default function StateWithHistory( initialState = {}, opt ) {
          *
          * @param  {string}  key  The data
          *
-         * @return {*}  undefined if key not defined of watever value
+         * @return {*}       Value saved under `key` or undefined
          */
         get( key ) {
             return stack[ 0 ].get( key )
@@ -59,33 +68,19 @@ export default function StateWithHistory( initialState = {}, opt ) {
         /**
          * Set new value with history
          *
-         * @param {Object}  data
+         * @param {Object}  data  Merge with latest saved values
          *
-         * @return {Object} StateWithHistory
+         * @return {Object}  stateHistoryFactory
          */
         set( data ) {
-
-            // add at the begining new map obj with data merged
+            // add at the begining
             stack.unshift( stack[ 0 ].merge( data ) )
 
-            // check history length & run user callback
-            afterUpdate()
+            // pop one if history too big
+            stack.length > props.maxLength && stack.pop()
 
-            return this
-        },
-
-        /**
-         * { function_description }
-         *
-         * @param {string}  key  The key
-         */
-        delete( key ) {
-
-            // add at the begining new map whithout key
-            stack.unshift( stack[ 0 ].delete( key ) )
-
-            // check history length & run user callback
-            afterUpdate()
+            // run user callback
+            props.afterUpdate && throttledAfterUpdate()
 
             return this
         },
@@ -93,9 +88,9 @@ export default function StateWithHistory( initialState = {}, opt ) {
         /**
          * Check if value under key has changed
          *
-         * @param  {string}   ...keys
+         * @param  {string[]}  keys  The keys
          *
-         * @return {boolean}  True if has changed, False otherwise.
+         * @return {boolean}   True if has changed, False otherwise.
          */
         hasChanged( ...keys ) {
             return keys.reduce( ( acc, key ) =>

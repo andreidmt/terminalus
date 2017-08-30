@@ -122,17 +122,17 @@ const DEFAULT_FRAME_PROPS = {
         childSignal: null,
         data: new _immutable.List(),
         showErrors: this.props.showErrors,
-        showLogs: false,
+        showLogs: this.props.showLogs,
+        clearOnRestart: this.props.clearOnRestart,
         isFullScreen: false,
         isMenuVisible: false,
         watchPattern: this.props.watch ? new _minimatch.Minimatch(this.props.watch) : null
     }, {
-        afterUpdate: (prev, next) => {
-            if (!(0, _immutable.is)(prev, next)) {
-                this.renderCount++;
-                this.prepareForRender();
-                this.parent.render();
-            }
+        pure: true,
+        afterUpdate: () => {
+            this.renderCount++;
+            this.prepareForRender();
+            this.parent.render();
         }
     });
 
@@ -259,7 +259,6 @@ TFrame.prototype = Object.create(_blessed.Log.prototype, {
      */
     onKeyF: {
         value: function onKeyF() {
-            this.log(U.info("Key: F (fullscreen toggle)"));
             this.state.set({
                 isFullScreen: !this.state.get("isFullScreen"),
                 isMenuVisible: false
@@ -336,8 +335,6 @@ TFrame.prototype = Object.create(_blessed.Log.prototype, {
 
             if (this.state.hasChanged("data", "showErrors", "showLogs")) {
                 this.setContent(concatData(this.state.get("data")));
-
-                // this.setScrollPerc( 100 )
             }
 
             // window size
@@ -367,11 +364,11 @@ TFrame.prototype = Object.create(_blessed.Log.prototype, {
             // label
             const color = this.state.get("childCode") === null ? _chalk2.default.blue : this.state.get("childCode") === 0 ? _chalk2.default.green : _chalk2.default.red;
 
-            const showErrorsMeta = `${this.state.get("showErrors") ? _figures2.default.tick : _figures2.default.cross} stderr`;
+            // const showErrorsMeta = `${this.state.get( "showErrors" ) ? unicode.tick : unicode.cross} stderr`
 
-            const showLogsMeta = `${this.state.get("showLogs") ? _figures2.default.tick : _figures2.default.cross} logs`;
+            // const showLogsMeta = `${this.state.get( "showLogs" ) ? unicode.tick : unicode.cross} logs`
 
-            this.setLabel(` ${color(_figures2.default.square)} ${this.props.label}  - ${showErrorsMeta} | ${showLogsMeta} (${this.renderCount})`);
+            this.setLabel(` ${color(_figures2.default.square)} ${this.props.label}(${this.renderCount})`);
         }
     },
 
@@ -431,6 +428,10 @@ TFrame.prototype = Object.create(_blessed.Log.prototype, {
                     childStartAt: process.hrtime()
                 });
 
+                this.state.get("clearOnRestart") && this.clearAll();
+
+                this.emit("child.start", this.state);
+
                 return (0, _child_process.spawn)(this.props.cmd, this.props.args, {
                     cwd: process.cwd(),
                     env: process.env,
@@ -455,16 +456,17 @@ TFrame.prototype = Object.create(_blessed.Log.prototype, {
                     this.pushError(data.toString());
                 });
 
-                // Bye Bye
-                Array("exit", "close").forEach(event => child.on(event, (code, signal) => {
+                child.on("exit", (code, signal) => {
                     this.state.set({
                         childCode: code,
                         childSignal: signal,
-                        childEndAt: process.hrtime(this.state.get("childStartAt"))
+                        childEndAt: process.hrtime(this.state.get("childStartAt").toArray())
                     });
 
-                    this.pushLog(`I died, ${event}: code ${code}, signal ${signal}`);
-                }));
+                    this.emit("child.end", this.state);
+
+                    this.pushLog(`I died, code ${code}, signal ${signal}`);
+                });
 
                 this.state.set({
                     process: child
